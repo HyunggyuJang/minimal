@@ -1,0 +1,225 @@
+(* $Id: translate.mal,v 1.2 1997/10/30 12:34:30 garrigue Exp $ *)
+
+open Common
+open Syntax
+open Types
+open Define
+open Untyped
+
+fun pattern pat =
+  case pat.sp_desc of
+    SPid s =>
+      begin
+	val info = Hashtbl.find constructors s;
+	if info.ci_size <> 0 then
+	  failwith ("In translate__pattern, " ^ s ^
+		    " : need arguments");
+	(UPblock (info.ci_tag, []), [])
+      handle Not_found =>
+	  val id = new_id s; (UPid id, [(s,id)])
+      end
+  | SPconst c => (UPconst c, [])
+  | SPtuple l =>
+      val (ul, bnds) = List.split (List.map pattern l);
+      (UPblock (0, ul), List.flatten bnds)
+  | SParray l =>
+      val (ul, bnds) = List.split (List.map pattern l);
+      (UPblock (0, ul), List.flatten bnds)
+  | SPconstr (s,pat) =>
+      begin
+	val info = Hashtbl.find constructors s;
+	if info.ci_size = 0 then
+	  failwith ("In translate__pattern, " ^ s ^
+		    " : cannot be applied")
+	else if info.ci_size = 1 then
+	  begin
+	    val (upat, bnds) = pattern pat;
+	    (UPblock (info.ci_tag, [upat]), bnds)
+	  end
+	else
+	  case pat.sp_desc of
+	    SPtuple l when List.length l = info.ci_size =>
+	      val (upatl, bnds) = List.split (List.map pattern l);
+	      (UPblock (info.ci_tag, upatl), List.flatten bnds)
+	  | _ =>
+	      failwith ("In translate__pattern, " ^ s ^
+			" : wrong number of arguments")
+	  end
+      handle
+	Not_found =>
+	  failwith ("In translate__pattern, " ^ s ^ " : unkwnown constructor")
+      end
+  | SPrecord l =>
+      val info = Hashtbl.find labels (fst (List.hd l));
+      val arr = Array.create info.li_total UPany;
+      val bnds =
+	List.map
+          (fn (s, p1) =>
+	    begin
+	      val (up1, bnds) = pattern p1
+	      and info = Hashtbl.find labels s;
+	      arr.[info.li_index] <- up1;
+	      bnds
+	    end)
+          l;
+      (UPblock (0, Array.to_list arr), List.flatten bnds)
+  | SPany => (UPany, [])
+  | SPtype (pat, _) => pattern pat
+  end
+
+var current_def = ""
+
+fun command bnds cmd =
+  case cmd.sc_desc of
+    SEexpr e =>
+      ([UEexpr (expression bnds e)], bnds)
+  | SEval l =>
+      val (patl, el) = List.split l;
+      val uel = List.map (expression bnds) el
+      and (upatl, new_bnds) = List.split (List.map pattern patl);
+      (List.map2
+	(fn pat (upat, ue) =>
+	  UEval (upat, ue, current_def)) patl (List.combine upatl uel),
+       List.flatten new_bnds @ bnds)
+  | SEfun l =>
+      val (sl, el) = List.split l;
+      val ids = List.map new_id sl;
+      val bnds = List.combine sl ids @ bnds;
+      val uel =
+	List.map2
+ 	  (fn s e =>
+	    begin
+	      val old = current_def;
+	      if old = "" then current_def <- s;
+ 	      val ue = expression bnds e;
+	      current_def <- old; ue
+	    end)
+ 	  sl el;
+      ([UEfun (List.combine ids uel)], bnds)
+  | SEvar l =>
+      val (sl, el) = List.split l;
+      val ids = List.map new_id sl
+      and uel = List.map (expression bnds) el;
+      val bnds = List.combine sl ids @ bnds;
+      ([UEfun (List.combine ids uel)], bnds)
+  | STtype _ | SThide _ =>
+      failwith "Translate.command"
+  end
+
+and expression bnds se =
+  case se.se_desc of
+    SEid s =>
+      begin
+	val info = Hashtbl.find constructors s;
+	if info.ci_size <> 0 then
+	  failwith ("In translate__expression, " ^ s ^
+		    " : need arguments");
+	UEblock (info.ci_tag, [])
+      handle Not_found => begin
+	UEid (List.assoc s bnds)
+      handle Not_found =>
+	  failwith ("In translate__expression : unbound identifier " ^ s)
+      end end
+  | SEconst c => UEconst c
+  | SEtuple l => UEblock (0, List.map (expression bnds) l)
+  | SEarray l => UEblock (0, List.map (expression bnds) l)
+  | SErecord l =>
+      val arr = Array.create (List.length l) (UEblock(0,[]));
+      List.iter
+        (fn (s,e1) =>
+	  begin
+	    val ue1 = expression bnds e1
+	    and info = Hashtbl.find labels s;
+	    arr.[info.li_index] <- ue1
+	  end)
+        l;
+      UEblock (0, Array.to_list arr)
+  | SEapply ({se_desc = SEid s} as e0, [e]) =>
+      begin
+	val info = Hashtbl.find constructors s;
+	if info.ci_size = 0 then
+	  failwith ("In translate__expression, " ^ s ^
+		    " : cannot be applied")
+	else if info.ci_size = 1 then
+	  UEblock (info.ci_tag, [expression bnds e])
+	else
+	  case e.se_desc of
+	    SEtuple l when List.length l = info.ci_size =>
+	      val uel = List.map (expression bnds) l;
+	      UEblock (info.ci_tag, uel)
+	  | _ =>
+	      failwith ("In translate__expression, " ^ s ^
+			" : wrong number of arguments")
+	  end
+      handle Not_found =>
+	  UEapply (expression bnds e0, [expression bnds e])
+      end
+  | SEapply (e, l) =>
+      UEapply (expression bnds e, List.map (expression bnds) l)
+  | SEfunct (patl, e) =>
+      val (upatl, new_bnds) = List.split (List.map pattern patl);
+      val ue = expression (List.flatten new_bnds @ bnds) e;
+      fun make_match pat upat =
+	case upat of
+	  UPid id => (id, [])
+	| _ =>
+	    val id = new_id "param";
+	    (id, [UEval (upat, UEid id, current_def)])
+	end;
+      val (ids, vals) = List.split (List.map2 make_match patl upatl);
+      UEfunct (ids, UEseq (List.flatten vals, ue))
+  | SEseq l =>
+      val (cmds, last) = Misc.split_last l;
+      val (ucmds, bnds) =
+	List.fold_left
+	  (fn (ucmds, bnds) cmd =>
+	    begin
+	      val (ucmd, bnds) = command bnds cmd;
+	      (ucmds @ ucmd, bnds)
+	    end)
+	  ([], bnds) cmds;
+      case last.sc_desc of
+	SEexpr e => UEseq (ucmds, expression bnds e)
+      |	_ =>
+	  val (ucmd, _) = command bnds last;
+	  UEseq (ucmds @ ucmd, UEblock (0,[]))
+      end
+  | SEcase (e, cases) =>
+      val ue = expression bnds e;
+      val ucases =
+	List.map
+	  (fn (pat, e) =>
+	    begin
+	      val (upat, new_bnds) = pattern pat;
+	      (upat, expression (new_bnds @ bnds) e)
+	    end)
+	  cases;
+      UEcase (ue, ucases, current_def)
+  | SEifthenelse (e1, e2, e3) =>
+      UEifthenelse (expression bnds e1, expression bnds e2, expression bnds e3)
+  | SEset (s, e) =>
+      begin
+	UEset (List.assoc s bnds, expression bnds e)
+      handle Not_found =>
+	failwith ("In translate__expression : unbound identifier " ^ s)
+      end
+  | SEgetfield (e1, s) =>
+      val ue1 = expression bnds e1
+      and info = Hashtbl.find labels s;
+      UEapply (UEid (List.assoc "$." bnds), [ue1, UEconst(Cint info.li_index)])
+  | SEsetfield (e1, s, e2) =>
+      val ue1 = expression bnds e1
+      and ue2 = expression bnds e2
+      and info = Hashtbl.find labels s;
+      UEapply (UEid (List.assoc "$.<-" bnds),
+	       [ue1, UEconst(Cint info.li_index), ue2])
+  | SEfor (s, e1, dir, e2, e3) =>
+      val ue1 = expression bnds e1
+      and ue2 = expression bnds e2;
+      val id = new_id s;
+      UEfor (id, ue1, dir, ue2, expression ((s,id)::bnds) e3)
+  | SEwhile (e1, e2) =>
+      UEwhile (expression bnds e1, expression bnds e2)
+  | SEtype (e, _) =>
+      expression bnds e
+  end

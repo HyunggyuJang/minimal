@@ -1,0 +1,40 @@
+(* Abstract stack module *)
+
+type 'a stack = {mutable stack: 'a list}
+
+fun new_stack () = {stack = []}
+
+fun push a s = s.stack <- a :: s.stack
+
+(* exception Empty *)
+
+fun pop s =
+  case s.stack of
+    [] => raise "Empty stack"
+  | r :: l =>
+      s.stack <- l;
+      r
+  end
+
+fun empty_stack s = s.stack = []
+
+fun clear_stack s = s.stack <- []
+
+fun do_stack f s = do_list f s.stack
+
+fun length_stack s = length_list s.stack
+
+fun get_stack s = s.stack
+
+hide stack
+
+(* Example: quick-sort with partition via iteration
+
+fun qsort l =
+  case l of [] => []
+  | a::l =>
+      val s1 = new_stack () and s2 = new_stack ();
+      do_list (fn b => push b (if b < a then s1 else s2)) l;
+      qsort (get_stack s1) @ a :: qsort (get_stack s2)
+  end
+*)

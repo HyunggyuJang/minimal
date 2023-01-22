@@ -1,0 +1,33 @@
+(* $Id: predef.mal,v 1.2 1997/10/31 11:11:35 garrigue Exp $ *)
+
+open Misc
+open Common
+open Types
+open Define
+
+(* types *)
+
+val id_int = new_id "int"
+and id_char = new_id "char"
+and id_float = new_id "float"
+and id_array = new_id "array"
+and id_bool = new_id "bool"
+and id_list = new_id "list"
+
+val basic_types =
+  begin
+    val tv = Unify.newvar ();
+    [ ("int", make_ti id_int [] Kbasic),
+      ("char", make_ti id_char [] Kbasic),
+      ("float", make_ti id_float [] Kbasic),
+      ("array", make_ti id_array [tv] Kbasic),
+      ("bool", make_ti id_bool [] (Kvariant(["false","true"],[]))),
+      ("list", make_ti id_list [tv]
+         (Kvariant (["[]"],
+		    [("::", [Tvar tv, Tconstr(id_list,[Tvar tv])])]))),
+      ("unit", make_ti (new_id "unit") [] (Kabbrev(Ttuple[]))),
+      ("string", make_ti (new_id "string") []
+         (Kabbrev(Tconstr(id_array,[Tconstr(id_char,[])])))) ]
+  end;
+
+List.iter (fn (name,info) => add_type name info) basic_types

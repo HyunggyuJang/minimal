@@ -1,0 +1,9 @@
+(* A type for variables, with default methods *)
+
+type 'a variable = {mutable v: 'a}
+
+fun new x = {v=x}
+fun set x y = x.v <- y
+fun get x = x.v
+
+hide variable

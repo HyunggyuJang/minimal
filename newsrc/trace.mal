@@ -1,0 +1,131 @@
+(* $Id: trace.mal,v 1.1 1997/10/31 11:12:30 garrigue Exp $ *)
+
+open Common
+open Types
+open Define
+open Format
+
+fun trace_obj s ty =
+  case Unify.repr ty of
+    Tarrow (ty1, ty2) =>
+      val tracing = trace_obj (s ^ " *") ty2;
+      (fn obj =>
+	Obj.repr (fn arg =>
+	  begin
+	    open_hovbox 2;
+	    print_string (s ^ " <=");
+	    print_space ();
+	    Printer.print_value ty1 arg;
+	    close_box ();
+	    print_newline ();
+	    val res = Obj.magic obj arg;
+	    open_hovbox 2;
+	    print_string (s ^ " * =");
+	    print_space ();
+	    Printer.print_value ty2 res;
+	    close_box ();
+	    print_newline ();
+	    tracing res
+	  end))
+  | _ => (fn obj => obj)
+  end
+
+fun tracing_obj s ty_args ty_arg ty_res =
+  begin
+    val tracing = trace_obj (s ^ " ..") ty_res;
+    (fn args obj => Obj.repr(fn arg =>
+      begin
+	open_hovbox 2;
+	print_string (s ^ " <=");
+	List.iter2
+	  (fn arg ty => begin print_space(); Printer.print_value ty arg end)
+	  (List.rev (arg::args)) (List.rev (ty_arg::ty_args));
+	close_box ();
+	print_newline ();
+	val res = Obj.magic obj arg;
+	open_hovbox 2;
+	print_string (s ^ " =>");
+	print_space ();
+	Printer.print_value ty_res res;
+	close_box ();
+	print_newline ();
+	tracing res
+      end))
+  end
+
+fun tracen_obj s n ty_args ty_res =
+  case Unify.repr ty_res of
+    Tarrow (ty_arg, ty_res) =>
+      if n = 1 or
+	  (case Unify.repr ty_res of Tarrow _ => false | _ => true end)
+      then tracing_obj s ty_args ty_arg ty_res
+      else begin
+	val tracing = tracen_obj s (n-1) (ty_arg::ty_args) ty_res;
+	(fn args obj => Obj.repr (fn arg =>
+	  begin
+	    val partial = Obj.magic obj arg;
+	    tracing (arg::args) partial
+	  end))
+      end
+  | _ => failwith "builtins__tracen_obj"
+  end
+
+var trace_table : (ident,Obj.t) Map.t = Map.empty compare_id
+
+fun trace n s =
+  begin
+    val s = Misc.string_of_array s;
+    begin
+      val info = Map.find s global.values
+      and id = List.assoc s global.idents;
+      val obj_ref = Map.find id global.env;
+      val old_obj =
+	begin Map.find id trace_table
+	handle Not_found => obj_ref.contents end;
+      val is_function =
+	case Unify.repr info.vi_type of
+	  Tarrow _ => true
+	| _ => false
+	end;
+      if not is_function then
+	prerr_endline (s ^ " is not a function, you cannot trace it.")
+      else begin
+	val traced_obj =
+	  if n <= 1 then trace_obj s info.vi_type old_obj
+		    else tracen_obj s n [] info.vi_type [] old_obj;
+	trace_table <- Map.add id old_obj trace_table;
+	obj_ref.contents <- traced_obj;
+	print_endline ("Function " ^ s ^ " is now traced.")
+      end
+    handle
+      Not_found => prerr_endline ("Unknown identifier " ^ s ^ ".")
+    end
+  end
+
+fun untrace s =
+  begin
+    val s = Misc.string_of_array s;
+    begin
+      val id = List.assoc s global.idents;
+      val obj_ref = Map.find id global.env
+      and old_obj = Map.find id trace_table;
+      obj_ref.contents <- old_obj;
+      trace_table <- Map.remove id trace_table;
+      print_endline ("Function " ^ s ^ " will not be traced anymore.")
+    handle
+      Not_found => prerr_endline ("Function " ^ s ^ " is not traced.")
+    end
+  end
+
+fun untrace_all () =
+  begin
+    Map.iter
+      (fn id old_obj =>
+	begin
+	  val obj_ref = Map.find id global.env;
+	  obj_ref.contents <- old_obj
+	end)
+      trace_table;
+    trace_table <- Map.empty compare_id;
+    print_endline "All functions are no longer traced."
+  end

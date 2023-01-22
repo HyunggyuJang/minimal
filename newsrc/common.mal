@@ -1,0 +1,25 @@
+(* $Id: common.mal,v 1.1 1997/10/30 09:25:27 garrigue Exp $ *)
+
+type 'a option =
+    None
+  | Some of 'a
+
+type constant =
+    Cint of int
+  | Cchar of char
+  | Cfloat of float
+
+type dirflag = Upto | Downto
+and access = Mutable | Immutable | Forbidden
+
+type ident = { name: string , index: int}
+
+var id_count = 0
+fun new_id name =
+  begin
+    id_count <- id_count + 1;
+    {name = name, index = id_count}
+  end
+
+fun same_id id1 id2 = (id1.index = id2.index)
+fun compare_id id1 id2 = (id1.index - id2.index)

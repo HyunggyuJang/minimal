@@ -1,0 +1,87 @@
+(* Quick-sort *)
+
+fun partition tst l =
+  case l of [] => ([],[])
+  | a::l =>
+      val (l1,l2) = partition tst l;
+      if tst a then (a::l1,l2) else (l1,a::l2)
+  end
+
+fun qsort cmp l =
+  case l of [] => []
+  | a::l =>
+      val (l1,l2) = partition (fn x => cmp x a) l;
+      qsort cmp l1 @ a :: qsort cmp l2
+  end
+
+(* Insertion sort *)
+
+fun insert a l =
+  case l of
+    [] => [a]
+  | b::l' => if a < b then a::l else b::insert a l'
+  end
+
+fun insertion l l' =
+  case l of
+    [] => l'
+  | a::l => insertion l (insert a l')
+  end
+
+fun isort l = insertion l []
+
+(* Merge sort *)
+
+fun merge cmp l1 l2 =
+  case (l1,l2) of
+    ([],_) => l2
+  | (_::_,[]) => l1
+  | (a::l1',b::l2') =>
+      if cmp a b then a :: merge cmp l1' l2
+                 else b :: merge cmp l1 l2'
+  end
+
+fun msort cmp l =
+  begin
+    fun split l =
+      case l of [] => []
+      | [_] => [l]
+      | a::b::l => if cmp a b then [a,b] :: split l else [b,a] :: split l
+      end;
+    fun mergeone l =
+      case l of [] => []
+      | [_] => l
+      | l1::l2::l => merge cmp l1 l2 :: mergeone l
+      end;
+    fun mergeall l =
+      case l of [] => []
+      | [l] => l
+      | _ => mergeall (mergeone l)
+      end;
+    mergeall (split l)
+  end
+
+(* Heap sort *)
+
+(*
+type heap = Node of int * heap * heap | Leaf
+
+fun shift_down n heap1 heap2 =
+  case (heap1, heap2) of
+    (Leaf, Leaf) => Node (n, Leaf, Leaf)
+  | (Node (m, Leaf, Leaf), Leaf) =>
+      if m > n then Node (m, Node (n, Leaf, Leaf), Leaf)
+               else Node (n, heap1, heap2)
+  | (Node (m, h1, h2), Node (m', h1', h2')) =>
+      if m > n then
+        if m' > m then Node (m', heap1, shift_down n h1' h2')
+                  else Node (m, shift_down n h1 h2, heap2)
+      else
+        if m' > n then Node (m', heap1, shift_down n h1' h2')
+                  else Node (n, heap1, heap2)
+  end
+
+fun init_heap lst h =
+  case lst of [] => 
+  | n :: lst =>
+*)

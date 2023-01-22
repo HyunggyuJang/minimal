@@ -1,0 +1,19 @@
+(* $Id: typechk.mai,v 1.1 1997/10/30 09:25:46 garrigue Exp $ *)
+
+open Common
+open Syntax
+open Types
+
+type error
+
+exception Type_error of error * location
+
+val add_typedef: location -> typedef list -> ident list
+
+val hide_type: location -> string -> unit
+
+val type_command:
+    (string, value_info) Map.t -> command -> (string, value_info) Map.t
+val type_expression:
+    (string, value_info) Map.t -> expression -> type_expr
+val report_error: error -> unit

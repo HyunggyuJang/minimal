@@ -1,0 +1,131 @@
+(* $Id: unify.mal,v 1.2 1997/10/30 12:34:31 garrigue Exp $ *)
+
+open Common
+open Types
+open Define
+
+var current_level = 0
+var global_level = 1
+val generic_level = -1
+
+fun begin_def () = current_level <- current_level + 1
+and end_def () = current_level <- current_level - 1
+
+fun reset_global_level () = global_level <- current_level + 1
+and new_global_var () = {link = None, level = global_level}
+
+fun newvar () = {link = None, level = current_level}
+
+fun map_type f ty =
+  case ty of
+    Tvar _ => ty
+  | Tarrow (ty1, ty2) => Tarrow (f ty1, f ty2)
+  | Ttuple tyl => Ttuple (List.map f tyl)
+  | Tconstr (id, tyl) => Tconstr (id, List.map f tyl)
+  end
+
+fun do_type f ty =
+  case ty of
+    Tvar _ => ()
+  | Tarrow (ty1, ty2) => f ty1; f ty2
+  | Ttuple tyl => List.iter f tyl
+  | Tconstr (_, tyl) => List.iter f tyl
+  end
+
+fun repr ty =
+  case ty of
+    Tvar ({link = Some ty} as tv) =>
+      val ty' = repr ty;
+      if ty' != ty then tv.link <- Some ty';
+      ty'
+  | _ => ty
+  end
+
+fun generalize ty =
+  case repr ty of
+    Tvar tv =>
+      if tv.level > current_level then tv.level <- generic_level
+  | ty =>
+      do_type generalize ty
+  end
+
+fun make_nongen ty =
+  case repr ty of
+    Tvar tv =>
+      if tv.level > current_level then tv.level <- current_level
+  | ty =>
+      do_type make_nongen ty
+  end
+
+fun subst s ty =
+  case repr ty of
+    Tvar tv as ty =>
+      begin List.assq tv s handle Not_found => ty end
+  | ty =>
+      map_type (subst s) ty
+  end
+
+exception Unify
+
+fun occur tv ty =
+  case repr ty of
+    Tvar tv' =>
+      if tv == tv' then raise Unify;
+      if tv'.level > tv.level then tv'.level <- tv.level
+  | ty => do_type (occur tv) ty
+  end
+
+fun expand ty =
+  case ty of
+    Tconstr(id,tyl) =>
+      val info = Map.find id global.types;
+      case info.ti_kind of
+	Kabbrev ty =>
+	  subst (List.combine info.ti_params tyl) ty
+      |	_ =>
+	  raise Not_found
+      end
+  | _ => raise Not_found
+  end
+
+fun unify ty1 ty2 =
+  begin
+    val ty1 = repr ty1 and ty2 = repr ty2;
+    if ty1 == ty2 then () else
+    case (ty1,ty2) of
+      (Tvar tv1, Tvar tv2) =>
+	if tv1.level > tv2.level then
+	  tv1.level <- tv2.level
+	else
+	  tv2.level <- tv1.level;
+	tv1.link <- Some ty2
+    | (Tvar tv, _) =>
+	occur tv ty2; tv.link <- Some ty2
+    | (_, Tvar tv) =>
+	occur tv ty1; tv.link <- Some ty1
+    | (Tarrow (t1,t2), Tarrow (u1,u2)) =>
+	unify t1 u1; unify t2 u2
+    | (Ttuple tl1, Ttuple tl2) =>
+	if List.length tl1 <> List.length tl2 then raise Unify;
+	List.iter2 unify tl1 tl2
+    | (Tconstr (id1,tl1), Tconstr (id2,tl2)) when same_id id1 id2 =>
+	List.iter2 unify tl1 tl2
+    | _ =>
+      begin
+	unify (expand ty1) ty2
+      handle Not_found => begin
+	unify ty1 (expand ty2)
+      handle Not_found =>
+	  raise Unify
+      end end
+    end
+  end
+
+fun filter_arrow ty =
+  case repr ty of
+    Tarrow (ty1, ty2) => (ty1, ty2)
+  | ty =>
+      val ty1 = Tvar(newvar()) and ty2 = Tvar(newvar());
+      unify ty (Tarrow (ty1, ty2));
+      (ty1, ty2)
+  end

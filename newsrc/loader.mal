@@ -1,0 +1,7 @@
+(* $Id: loader.mal,v 1.1 1997/10/30 09:25:34 garrigue Exp $ *)
+
+do_list load_object
+  [ "misc.zo"; "common"; "syntax"; "parser"; "lexer"; "types";
+    "define"; "unify"; "predef"; "printer"; "typechk"; "untyped";
+    "translate"; "compile"; "builtins"; "graph"; "toploop" ]
+;;

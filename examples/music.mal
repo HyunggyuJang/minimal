@@ -1,0 +1,53 @@
+(* A small piano program *)
+
+require "prelude";
+
+fun freq n =
+  trunc (200. * 2. ** (float n / 12.))
+
+val A = freq 0
+val Bb = freq 1
+val B = freq 2
+val C = freq 3
+val Cs = freq 4
+val D = freq 5
+val Eb = freq 6
+val E = freq 7
+val F = freq 8
+val Fs = freq 9
+val G = freq 10
+val Gs = freq 11
+
+val Do = C and Re = D and Mi = E and Fa = F and Sol = G
+and La = 2*A and Si = 2*B
+
+val gamme = [Do,Re,Mi,Fa,Sol,La,Si,Do]
+
+fun sharp n = trunc (float n * 2. ** (1./12.))
+
+val keys = "awsedftgyhujkolp;:[]" ^ "AWSEDFTGYHUJKOLP+*{}"
+
+fun wait n =
+  begin
+    val start = time ();
+    while time() - start < n*1.0e-3 do ()
+  end
+
+fun piano () =
+  while true do begin
+    val key = read_key ();
+    val i = index keys key;
+    val n =
+      if i >= 20 then i-5 else
+      if i >= 0 then i+3 else (-12);
+    sound (freq n) 500
+  end
+;
+
+open_graph();
+set_font "-*-Helvetica-bold-r-*--24-*";
+moveto 100 (size_y() / 2 + 20);
+draw_string "Notes are: awsedftgyhujkolp;:[]";
+moveto 100 (size_y() / 2 - 20);
+draw_string "and: AWSEDFTGYHUJKOLP+*{}";
+piano();

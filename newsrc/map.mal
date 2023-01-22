@@ -1,0 +1,137 @@
+(* The Map module is directly translated from OCaml *)
+
+(* $Id: map.mal,v 1.1 1997/10/30 09:25:35 garrigue Exp $ *)
+
+type ('a,'b) t = { compare: 'a -> 'a -> int, map: ('a,'b) tree }
+and ('a,'b) tree =
+    Empty
+  | Node of ('a,'b) tree * 'a * 'b * ('a,'b) tree * int
+
+fun empty cmp = {compare = cmp, map = Empty}
+
+fun height t =
+  case t of
+    Empty => 0
+  | Node(_,_,_,_,h) => h
+  end
+
+fun create l x d r =
+  begin
+    val hl = height l and hr = height r;
+    Node(l, x, d, r, (if hl >= hr then hl + 1 else hr + 1))
+  end
+
+fun bal l x d r =
+  begin
+    val hl = case l of Empty => 0 | Node(_,_,_,_,h) => h end
+    val hr = case r of Empty => 0 | Node(_,_,_,_,h) => h end;
+    if hl > hr + 2 then
+      case l of
+        Empty => invalid_arg "Map.bal"
+      | Node(ll, lv, ld, lr, _) =>
+          if height ll >= height lr then
+            create ll lv ld (create lr x d r)
+          else
+            case lr of
+              Empty => invalid_arg "Map.bal"
+            | Node(lrl, lrv, lrd, lrr, _) =>
+                create (create ll lv ld lrl) lrv lrd (create lrr x d r)
+            end
+      end
+    else if hr > hl + 2 then
+      case r of
+        Empty => invalid_arg "Map.bal"
+      | Node(rl, rv, rd, rr, _) =>
+          if height rr >= height rl then
+            create (create l x d rl) rv rd rr
+          else
+            case rl of
+              Empty => invalid_arg "Map.bal"
+            | Node(rll, rlv, rld, rlr, _) =>
+                create (create l x d rll) rlv rld (create rlr rv rd rr)
+            end
+      end
+    else Node(l, x, d, r, (if hl >= hr then hl + 1 else hr + 1))
+  end
+
+fun add x data m =
+  begin
+    fun add x data t =
+      case t of
+	Empty =>
+	  Node(Empty, x, data, Empty, 1)
+      | Node(l, v, d, r, h) =>
+	  val c = m.compare x v;
+	  if c = 0 then
+            Node(l, x, data, r, h)
+	  else if c < 0 then
+            bal (add x data l) v d r
+          else
+	    bal l v d (add x data r)
+      end;
+    m.{map = add x data m.map}
+  end
+
+fun find x m =
+  begin
+    val test = m.compare x;
+    fun find t =
+      case t of
+	Empty =>
+	  raise Not_found
+      | Node(l, v, d, r, _) =>
+          val c = test v;
+          if c = 0 then d
+          else find (if c < 0 then l else r)
+      end;
+    find m.map
+  end
+
+fun merge t1 t2 =
+  case (t1, t2) of
+    (Empty, t) => t
+  | (t, Empty) => t
+  | (Node(l1, v1, d1, r1, h1), Node(l2, v2, d2, r2, h2)) =>
+      bal l1 v1 d1 (bal (merge r1 l2) v2 d2 r2)
+  end
+
+fun remove x m =
+  begin
+    val test = m.compare x;
+    fun remove t =
+      case t of
+        Empty =>
+          Empty
+      | Node(l, v, d, r, h) =>
+          val c = test v;
+          if c = 0 then
+            merge l r
+          else if c < 0 then
+            bal (remove l) v d r
+          else
+            bal l v d (remove r)
+      end;
+    m.{map = remove m.map}
+  end
+
+fun iter f m =
+  begin
+    fun iter t =
+      case t of
+        Empty => ()
+      | Node(l, v, d, r, _) =>
+          iter l; f v d; iter r
+      end;
+    iter m.map
+  end
+
+fun fold f m accu =
+  begin
+    fun fold t accu =
+      case t of
+        Empty => accu
+      | Node(l, v, d, r, _) =>
+          fold l (f v d (fold r accu))
+      end;
+    fold m.map accu
+  end

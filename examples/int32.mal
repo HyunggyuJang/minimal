@@ -1,0 +1,69 @@
+(* Operations on 32-bit integers *)
+(* Equality only if int is 31 bit *)
+
+type int32 = {hi: bool, lo: int}
+
+fun int32 x = {hi=false, lo=x}
+val zero32 = int32 0
+val one32 = int32 1
+val all31 = (1 lsl 31) - 1
+val all32 = {hi=true, lo=all31}
+
+fun xor a b = if a then not b else b
+
+val top31 = 1 lsl 30
+fun pos31 x = x land top31 == 0
+fun neg31 x = x land top31 != 0
+fun norm32 x = {hi=x.hi, lo=x.lo land all31}
+
+fun add32 x y =
+  begin
+    val lo = x.lo + y.lo;
+    val hi =
+      if neg31 x.lo then pos31 lo or neg31 y.lo else pos31 lo & neg31 y.lo;
+    { hi = xor x.hi (xor y.hi hi), lo = lo }
+  end
+
+fun neg32 x =
+  add32 one32 {hi = not x.hi, lo = x.lo lxor (-1)}
+
+fun lsl32 x n =
+  if n = 0 then x else
+  { hi = (x.lo lsr (31-n)) land 1 = 1,
+    lo = x.lo lsl n }
+
+(* Result is normalized *)
+fun lsr32 x n =
+  if n = 0 then x else begin
+    val lo = (x.lo land all31) lsr n;
+    { hi = false,
+      lo = if x.hi then lo lor (1 lsl (31-n)) else lo }
+  end
+
+fun land32 x y = {hi = x.hi & y.hi, lo = x.lo land y.lo}
+
+fun mul32 x y =
+  begin
+    val l = lsl32 (int32 ((lsr32 x 1).lo * y.lo)) 1;
+    if x.lo land 1 = 1 then add32 l y else l
+  end
+
+fun hex_of_int32 n =
+  begin
+    val k = n.lo mod 16;
+    val s = if n.hi or n.lo > 15 then hex_of_int32 (lsr32 n 4) else "";
+    val d = if k < 10 then char (code '0' + k) else char (code 'a' + k - 10);
+    s ^ [|d|]
+  end
+
+fun int32_of_hex s =
+  if s = "" then zero32 else
+  begin
+    val len = length s - 1;
+    val c = s.[len];
+    val d =
+      if c >= '0' & c <= '9' then code c - code '0' else
+      if c >= 'a' & c <= 'f' then code c - code 'a' + 10 else
+      if c >= 'A' & c <= 'F' then code c - code 'A' + 10 else 0;
+    add32 (int32 d) (lsl32 (int32_of_hex (sub s 0 len)) 4)
+  end
