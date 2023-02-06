@@ -1,0 +1,25 @@
+{
+  "name": "minimal",
+  "esy": {
+    "build": "dune build -p #{self.name}",
+    "buildsInSource": "_build"
+  },
+  "scripts": {
+    "watch": "dune build --watch --terminal-persistence=clear-on-rebuild",
+    "test": "dune runtest",
+    "test-fmt": "dune build @fmt",
+    "fix": "dune build @fmt --auto-promote",
+    "repl": "rlwrap dune exec minimal"
+  },
+  "dependencies": {
+    "@opam/dune": "3.1.1",
+    "@opam/fmt": "0.9.0",
+    "@opam/ppx_inline_test": "v0.15.0",
+    "ocaml": "4.14.0"
+  },
+  "devDependencies": {
+    "@opam/alcotest": "1.5.0",
+    "@opam/ocamlformat": "0.21.0",
+    "@opam/ocamlformat-rpc": "0.21.0"
+  }
+}

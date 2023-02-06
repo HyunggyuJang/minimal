@@ -1,0 +1,6 @@
+(executable
+ (public_name minimal)
+ (name main)
+ (libraries minimal)
+ (preprocess
+  (pps ppx_inline_test)))

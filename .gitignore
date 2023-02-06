@@ -9,3 +9,7 @@ src/opt-stripped
 **/*.cmo
 **/*.cmi
 **/*.cmx
+/node_modules/
+/_esy/
+/_build/
+/esy.lock/

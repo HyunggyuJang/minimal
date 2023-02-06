@@ -1,0 +1,10 @@
+(library
+ (name minimal)
+ (inline_tests)
+ (preprocess
+  (pps ppx_inline_test)))
+
+(menhir
+ (modules parser))
+
+(ocamllex lexer)
