@@ -79,6 +79,9 @@ let test_tokens () =
     [ ( "unterminated string"
       , Lexical_error (Unterminated_string, 0, 13)
       , "\"unterminated" )
+    ; ( "unterminated comment"
+      , Lexical_error (Unterminated_comment, 0, 15)
+      , "(* unterminated" )
     ]
   in
   List.iter
