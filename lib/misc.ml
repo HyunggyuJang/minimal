@@ -1,6 +1,6 @@
 (* $Id: misc.ml,v 1.8 2018/06/26 01:30:27 garrigue Exp $ *)
 
-type wchar = int
+type wchar = int [@@deriving show]
 
 type code =
   | EUC

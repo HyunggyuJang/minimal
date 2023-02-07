@@ -10,12 +10,7 @@ type constant =
   | Cint of int
   | Cchar of wchar
   | Cfloat of float
-
-let pprint_const ppf = function
-  | Cint i -> Fmt.pf ppf "@[<hov 2> Cint@ %d@]" i
-  | Cchar c -> Fmt.pf ppf "@[<hov 2> Cchar@ %c@]" @@ char_of_int c
-  | Cfloat f -> Fmt.pf ppf "@[<hov 2> Cfloat@ %f@]" f
-;;
+[@@deriving show]
 
 type dirflag =
   | Upto
@@ -25,12 +20,7 @@ and access =
   | Mutable
   | Immutable
   | Forbidden
-
-let pprint_access ppf = function
-  | Mutable -> Fmt.pf ppf "Mutable"
-  | Immutable -> Fmt.pf ppf "Immutable"
-  | Forbidden -> Fmt.pf ppf "Forbidden"
-;;
+[@@deriving show]
 
 type ident =
   { name : string

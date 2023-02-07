@@ -1,8 +1,9 @@
 (library
  (name minimal)
  (inline_tests)
+ (libraries ppx_show.runtime)
  (preprocess
-  (pps ppx_inline_test)))
+  (pps ppx_inline_test ppx_show)))
 
 (menhir
  (modules parser))

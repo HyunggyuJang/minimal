@@ -9,7 +9,7 @@ type location =
 
 type type_expr =
   { st_desc : type_desc
-  ; st_loc : location
+  ; st_loc : (location[@opaque])
   }
 
 and type_desc =
@@ -17,74 +17,24 @@ and type_desc =
   | STarrow of type_expr * type_expr
   | STtuple of type_expr list
   | STconstr of string * type_expr list
-
-let rec pprint_type_expr_desc ppf = function
-  | STvar s -> Fmt.pf ppf "@[<hov 2> STvar@ %s@]" s
-  | STarrow (e1, e2) ->
-    Fmt.pf
-      ppf
-      "@[<hov 2> STarrow@ %a@ ->@ %a@]"
-      pprint_type_expr
-      e1
-      pprint_type_expr
-      e2
-  | STtuple es ->
-    Fmt.pf ppf "@[<hov 2> STuple@ %a@]" (Fmt.list pprint_type_expr) es
-  | STconstr (s, es) ->
-    Fmt.pf ppf "@[<hov 2> STconstr@ %s@ (%a)@]" s (Fmt.list pprint_type_expr) es
-
-and pprint_type_expr ppf e = pprint_type_expr_desc ppf e.st_desc
+[@@deriving show]
 
 type typedef =
   { sd_name : string
   ; sd_params : string list
   ; sd_kind : type_kind
-  ; sd_loc : location
+  ; sd_loc : (location[@opaque])
   }
 
 and type_kind =
   | SKabbrev of type_expr
   | SKvariant of (string * type_expr list) list
   | SKrecord of (string * type_expr * access) list
-
-let pprint_type_kind ppf = function
-  | SKabbrev e -> Fmt.pf ppf "@[<hov 2> SKabbrev@ %a@]" pprint_type_expr e
-  | SKvariant dl ->
-    Fmt.pf
-      ppf
-      "@[<hov 2> SKvariant@ %a@]"
-      (Fmt.list @@ Fmt.pair Fmt.string @@ Fmt.list pprint_type_expr)
-      dl
-  | SKrecord dl ->
-    Fmt.pf
-      ppf
-      "@[<hov 2> SKrecord@ %a@]"
-      ( Fmt.list @@ fun ppf (lbl, e, ac) ->
-        Fmt.pf
-          ppf
-          "@[<hov 2>%s@ {%a}@ :@ %a@]"
-          lbl
-          pprint_access
-          ac
-          pprint_type_expr
-          e )
-      dl
-;;
-
-let pprint_typedef ppf e =
-  Fmt.pf
-    ppf
-    "@[<hov 2> Typedef@ %s@ (%a)@ %a@]"
-    e.sd_name
-    Fmt.(list string)
-    e.sd_params
-    pprint_type_kind
-    e.sd_kind
-;;
+[@@deriving show]
 
 type pattern =
   { sp_desc : pattern_desc
-  ; sp_loc : location
+  ; sp_loc : (location[@opaque])
   }
 
 and pattern_desc =
@@ -96,10 +46,11 @@ and pattern_desc =
   | SPrecord of (string * pattern) list
   | SPany
   | SPtype of pattern * type_expr
+[@@deriving show]
 
 type expression =
   { mutable se_desc : expression_desc
-  ; se_loc : location
+  ; se_loc : (location[@opaque])
   }
 
 and expression_desc =
@@ -122,7 +73,7 @@ and expression_desc =
 
 and command =
   { sc_desc : command_desc
-  ; sc_loc : location
+  ; sc_loc : (location[@opaque])
   }
 
 and command_desc =
@@ -132,3 +83,4 @@ and command_desc =
   | SEvar of (string * expression) list
   | STtype of typedef list
   | SThide of string
+[@@deriving show]
