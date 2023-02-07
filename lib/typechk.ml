@@ -387,8 +387,8 @@ let rec expression bnds e =
     | [ ty_arg ], [ e ] ->
       type_expect bnds ty_arg e;
       ty_res
-    | _, [ { se_desc = SEtuple el; _ } ] when List.length el = List.length ty_args
-      ->
+    | _, [ { se_desc = SEtuple el; _ } ]
+      when List.length el = List.length ty_args ->
       List.iter2 (type_expect bnds) ty_args el;
       ty_res
     | _ ->
