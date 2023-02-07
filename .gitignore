@@ -13,3 +13,4 @@ src/opt-stripped
 /_esy/
 /_build/
 /esy.lock/
+**/.DS_Store

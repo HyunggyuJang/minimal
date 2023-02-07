@@ -1,5 +1,0 @@
-(* $Id: trace.mai,v 1.1 1997/10/31 11:12:29 garrigue Exp $ *)
-
-val trace : int -> char array -> unit
-val untrace : char array -> unit
-val untrace_all : unit -> unit

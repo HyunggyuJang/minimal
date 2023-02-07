@@ -1,9 +1,0 @@
-(* $Id: translate.mai,v 1.2 1997/10/30 12:34:29 garrigue Exp $ *)
-
-open Common
-
-val expression :
-    (string * ident) list -> Syntax.expression -> Untyped.expression
-val command :
-    (string * ident) list -> Syntax.command ->
-    Untyped.command list * (string * ident) list
