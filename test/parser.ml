@@ -24,7 +24,7 @@ let print_token : Parser.token -> string =
   | EQUAL -> "EQUAL"
   | EQUALEQUAL -> "EQUALEQUAL"
   | EQUALGREATER -> "EQUALGREATER"
-  | FLOAT _ -> "FLOAT"
+  | FLOAT f -> "FLOAT " ^ string_of_float f
   | FN -> "FN"
   | FOR -> "FOR"
   | FUN -> "FUN"
@@ -37,7 +37,7 @@ let print_token : Parser.token -> string =
   | INFIX2 _ -> "INFIX2"
   | INFIX3 _ -> "INFIX3"
   | INFIX4 _ -> "INFIX4"
-  | INT _ -> "INT"
+  | INT i -> "INT " ^ string_of_int i
   | LBRACE -> "LBRACE"
   | LBRACKET -> "LBRACKET"
   | LBRACKETBAR -> "LBRACKETBAR"
@@ -54,7 +54,7 @@ let print_token : Parser.token -> string =
   | RPAREN -> "RPAREN"
   | SEMI -> "SEMI"
   | STAR -> "STAR"
-  | STRING _ -> "STRING"
+  | STRING s -> "STRING " ^ s
   | SUBTRACTIVE _ -> "SUBTRACTIVE"
   | THEN -> "THEN"
   | TO -> "TO"
@@ -67,14 +67,33 @@ let print_token : Parser.token -> string =
 
 let test_tokens () =
   let open Lexer in
-  let table = [ "var", "VAR", "var"; "string", "STRING", "\"test\"" ] in
+  let success_table =
+    [ "var", "VAR", "var"
+    ; "string", "STRING test", "\"test\""
+    ; "number", "INT 237", "237"
+    ; "negative", "SUBTRACTIVE", "-237"
+    ; "float", "FLOAT 23.8", "23.8"
+    ]
+  in
+  let failure_table =
+    [ ( "unterminated string"
+      , Lexical_error (Unterminated_string, 0, 13)
+      , "\"unterminated" )
+    ]
+  in
   List.iter
     (fun (name, expected, input) ->
       Lexing.from_string input
       |> main
       |> print_token
       |> Alcotest.(check string) name expected)
-    table
+    success_table;
+  List.iter
+    (fun (name, exn, input) ->
+      Alcotest.check_raises name exn (fun () ->
+          let _ = Lexing.from_string input |> main in
+          ()))
+    failure_table
 ;;
 
 let () =
