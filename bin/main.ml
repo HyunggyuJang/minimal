@@ -203,7 +203,7 @@ let do_phrase ph =
 
 let report_error lexbuf filename lines exn =
   (match exn with
-  | Parsing.Parse_error ->
+  | Parser.Error ->
     printf
       "> %a\n  Syntax error.@."
       (output_location filename lines)
