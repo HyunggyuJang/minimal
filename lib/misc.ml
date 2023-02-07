@@ -56,7 +56,7 @@ let to_unichar s ~pos : wchar =
   else (
     let u = ref (c land ((1 lsl (7 - n)) - 1)) in
     let len = String.length s in
-    for i = 1 to n - 1 do
+    for _ = 1 to n - 1 do
       u := !u lsl 6;
       if !pos < len
       then (

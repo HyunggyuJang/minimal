@@ -1,7 +1,6 @@
 /* The parser definition */
 
 %{
-    open Lexing;;
     open Misc;;
     open Common;;
     open Syntax;;
@@ -25,9 +24,9 @@
 
     let make_string ~loc s =
       make_expr ~loc (SEarray (List.map
-                            (fun c -> { se_desc = SEconst (Cchar c) ;
-                                        se_loc = make_loc loc })
-                            (Array.to_list (array_of_string s))))
+                                 (fun c -> { se_desc = SEconst (Cchar c) ;
+                                             se_loc = make_loc loc })
+                                 (Array.to_list (array_of_string s))))
     and make_unop ~loc s e =
       make_expr ~loc (SEapply (make_ident ~loc s, [e]))
     and make_binop ~loc s e1 e2 =
@@ -38,9 +37,9 @@
 
     let make_pat_string ~loc s =
       make_pat ~loc (SParray (List.map
-                           (fun c -> { sp_desc = SPconst (Cchar c) ;
-                                       sp_loc = make_loc loc })
-                           (Array.to_list (array_of_string s))))
+                                (fun c -> { sp_desc = SPconst (Cchar c) ;
+                                            sp_loc = make_loc loc })
+                                (Array.to_list (array_of_string s))))
     and make_cons_pat ~loc a l =
       make_pat ~loc (SPconstr ("::", make_pat ~loc (SPtuple [a; l])))
     ;;

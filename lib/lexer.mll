@@ -1,7 +1,7 @@
 (* The lexer definition *)
 
 {
-(**) open Parser;;
+open Parser;;
 
 (* For nested comments *)
 
