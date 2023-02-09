@@ -9,7 +9,7 @@ type location =
 
 type type_expr =
   { st_desc : type_desc
-  ; st_loc : (location[@opaque])
+  ; st_loc : location [@opaque] [@equal fun _ _ -> true]
   }
 
 and type_desc =
@@ -17,24 +17,24 @@ and type_desc =
   | STarrow of type_expr * type_expr
   | STtuple of type_expr list
   | STconstr of string * type_expr list
-[@@deriving show]
+[@@deriving show, eq]
 
 type typedef =
   { sd_name : string
   ; sd_params : string list
   ; sd_kind : type_kind
-  ; sd_loc : (location[@opaque])
+  ; sd_loc : location [@opaque] [@equal fun _ _ -> true]
   }
 
 and type_kind =
   | SKabbrev of type_expr
   | SKvariant of (string * type_expr list) list
   | SKrecord of (string * type_expr * access) list
-[@@deriving show]
+[@@deriving show, eq]
 
 type pattern =
   { sp_desc : pattern_desc
-  ; sp_loc : (location[@opaque])
+  ; sp_loc : location [@opaque] [@equal fun _ _ -> true]
   }
 
 and pattern_desc =
@@ -46,11 +46,11 @@ and pattern_desc =
   | SPrecord of (string * pattern) list
   | SPany
   | SPtype of pattern * type_expr
-[@@deriving show]
+[@@deriving show, eq]
 
 type expression =
   { mutable se_desc : expression_desc
-  ; se_loc : (location[@opaque])
+  ; se_loc : location [@opaque] [@equal fun _ _ -> true]
   }
 
 and expression_desc =
@@ -73,7 +73,7 @@ and expression_desc =
 
 and command =
   { sc_desc : command_desc
-  ; sc_loc : (location[@opaque])
+  ; sc_loc : location [@opaque] [@equal fun _ _ -> true]
   }
 
 and command_desc =
@@ -83,4 +83,4 @@ and command_desc =
   | SEvar of (string * expression) list
   | STtype of typedef list
   | SThide of string
-[@@deriving show]
+[@@deriving show, eq]

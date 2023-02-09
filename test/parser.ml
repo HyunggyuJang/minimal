@@ -66,17 +66,23 @@ let print_token : Parser.token -> string =
   | WHILE -> "WHILE"
 ;;
 
-let expression_testable = Alcotest.testable pp_expression_desc ( = )
+let expression_testable = Alcotest.testable pp_expression equal_expression
 
 let test_tokens () =
   let open Lexer in
   let success_table =
     [ "var", "VAR", "var"
     ; "string", "STRING test", {|"test"|}
+    ; "char", "CHAR", {|'a'|}
     ; "ident", "IDENT ident", "ident"
     ; "number", "INT 237", "237"
     ; "negative", "SUBTRACTIVE", "-237"
     ; "float", "FLOAT 23.8", "23.8"
+    ; "true", "IDENT true", "true"
+    ; "infix0: less than", "INFIX0", "<"
+    ; "infix0: greater than", "INFIX0", ">"
+    ; "infix0: less than or equals to", "INFIX0", "<="
+    ; "equal", "EQUAL", "="
     ]
   in
   let failure_table =
@@ -103,37 +109,79 @@ let test_tokens () =
     failure_table
 ;;
 
+let make_expression desc =
+  { se_desc = desc
+  ; se_loc = { first = Lexing.dummy_pos; last = Lexing.dummy_pos }
+  }
+;;
+
+let parse s =
+  Lexing.from_string s |> Parser.phrase Lexer.main |> fun e ->
+  match (List.hd e).sc_desc with
+  | SEexpr exp -> exp
+  | _ -> assert false
+;;
+
 let test_simple_expr () =
-  let open Parser in
-  let success_table = [ "ident", SEid "ident", "ident" ] in
+  let success_table =
+    [ "ident", SEid "ident", "ident"
+    ; ( "string"
+      , SEarray
+          (List.map
+             (fun c -> make_expression @@ SEconst (Cchar c))
+             (Array.to_list (Minimal.Misc.array_of_string "string")))
+      , {|"string"|} )
+    ; "constant, int", SEconst (Cint 8), "8"
+    ; "constant, char", SEconst (Cchar (int_of_char 'a')), {|'a'|}
+    ; "constant, float", SEconst (Cfloat 2.8), "2.8"
+    ; ( "tuple"
+      , SEtuple (List.map make_expression [ SEconst (Cint 0); SEid "true" ])
+      , "(0,true)" )
+    ; "infx", SEid "<", "(<)"
+    ; ( "array"
+      , SEarray
+          (List.map
+             (fun e -> make_expression e)
+             [ SEconst (Cfloat 2.8); SEid "true" ])
+      , "[|2.8, true|]" )
+    ; ( "record"
+      , SErecord [ "test", make_expression @@ SEid "test" ]
+      , "{ test = test }" )
+    ; ( "field access"
+      , SEgetfield (make_expression @@ SEid "test", "test")
+      , "test.test" )
+    ; ( "array access"
+      , SEapply
+          ( make_expression @@ SEid "."
+          , [ make_expression @@ SEid "test"
+            ; make_expression @@ SEconst (Cint 8)
+            ] )
+      , "test.[8]" )
+    ]
+  in
   List.iter
     (fun (name, expected, input) ->
-      Lexing.from_string input |> phrase Lexer.main |> fun e ->
-      (match (List.hd e).sc_desc with
-      | SEexpr exp -> exp.se_desc
-      | _ -> assert false)
-      |> Alcotest.check expression_testable name expected)
-    success_table;
-  Lexing.from_string {|"string"|} |> phrase Lexer.main |> fun e ->
-  (match (List.hd e).sc_desc with
-  | SEexpr exp -> show_expression_desc exp.se_desc
-  | _ -> assert false)
-  |> Alcotest.(check string)
-       "string"
-       {|(Syntax.SEarray
-   [{ Syntax.se_desc = (Syntax.SEconst (Common.Cchar 115)); se_loc = <opaque>
-      };
-     { Syntax.se_desc = (Syntax.SEconst (Common.Cchar 116));
-       se_loc = <opaque> };
-     { Syntax.se_desc = (Syntax.SEconst (Common.Cchar 114));
-       se_loc = <opaque> };
-     { Syntax.se_desc = (Syntax.SEconst (Common.Cchar 105));
-       se_loc = <opaque> };
-     { Syntax.se_desc = (Syntax.SEconst (Common.Cchar 110));
-       se_loc = <opaque> };
-     { Syntax.se_desc = (Syntax.SEconst (Common.Cchar 103));
-       se_loc = <opaque> }
-     ])|}
+      parse input
+      |> Alcotest.check expression_testable name (make_expression expected))
+    success_table
+;;
+
+let test_expr () =
+  let success_table =
+    [ "negation has the highest priority", "(-4) ** 8", "-4 ** 8"
+    ; ( "exponent has higher priority than others"
+      , "2 + (3 * (2 ** 4)) < 8"
+      , "2 + 3 * 2 ** 4 < 8" )
+    ; ( "identical operator's priority equals to equal operator"
+      , "(0 == 3) = 4"
+      , "0 == 3 = 4" )
+    ; "math operators are left associative", "(2 + 4) - 8", "2 + 4 - 8"
+    ]
+  in
+  List.iter
+    (fun (name, expected, input) ->
+      Alcotest.check expression_testable name (parse expected) (parse input))
+    success_table
 ;;
 
 let () =
@@ -142,6 +190,7 @@ let () =
     [ ( "parse"
       , [ Alcotest.test_case "tokens" `Quick test_tokens
         ; Alcotest.test_case "simple expressions" `Quick test_simple_expr
+        ; Alcotest.test_case "expressions" `Quick test_expr
         ] )
     ]
 ;;

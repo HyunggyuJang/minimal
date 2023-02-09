@@ -10,7 +10,7 @@ type constant =
   | Cint of int
   | Cchar of wchar
   | Cfloat of float
-[@@deriving show]
+[@@deriving show, eq]
 
 type dirflag =
   | Upto
@@ -20,7 +20,7 @@ and access =
   | Mutable
   | Immutable
   | Forbidden
-[@@deriving show]
+[@@deriving show, eq]
 
 type ident =
   { name : string
