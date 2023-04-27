@@ -85,7 +85,7 @@ let rec pattern alloc = function
        done;
        CPconst obj
      with
-    | Not_found -> CPblock (tag, cv))
+     | Not_found -> CPblock (tag, cv))
   | UPany -> CPany
 ;;
 
@@ -145,18 +145,18 @@ let rec command alloc = function
            orefs.(i) := codes.(i) env
          done
      with
-    | Not_found ->
-      Array.iter
-        (fun (id, _) ->
-          let _ = add_alloc alloc id in
-          ())
-        v;
-      let codes = Array.map (fun (_, e) -> expression alloc e) v
-      and last = Array.length v - 1 in
-      fun env ->
-        for i = 0 to last do
-          env.(i + offset) <- codes.(i) env
-        done)
+     | Not_found ->
+       Array.iter
+         (fun (id, _) ->
+           let _ = add_alloc alloc id in
+           ())
+         v;
+       let codes = Array.map (fun (_, e) -> expression alloc e) v
+       and last = Array.length v - 1 in
+       fun env ->
+         for i = 0 to last do
+           env.(i + offset) <- codes.(i) env
+         done)
   | UEvar (id, e) ->
     let code = expression alloc e in
     let i = add_alloc alloc id in
@@ -168,12 +168,12 @@ and expression alloc = function
        let i = find_alloc alloc id in
        fun env -> env.(i)
      with
-    | Not_found ->
-      (try
-         let oref = IdMap.find id !global_env in
-         fun _ -> !oref
-       with
-      | Not_found -> failwith (id.name ^ " not found")))
+     | Not_found ->
+       (try
+          let oref = IdMap.find id !global_env in
+          fun _ -> !oref
+        with
+        | Not_found -> failwith (id.name ^ " not found")))
   | UEconst c -> return (repr_constant c)
   | UEblock (tag, []) -> return (Obj.new_block tag 0)
   | UEblock (tag, l) ->
@@ -228,19 +228,19 @@ and expression alloc = function
       if last_copy = -1
       then
         (Obj.magic (fun _ x ->
-             let new_env = (Obj.obj (Obj.new_block 0 size) : Obj.t array) in
-             (* build a cell to force allocation, hence signals *)
-             ignore (Some (new_env.(0) <- x));
-             code new_env)
+           let new_env = (Obj.obj (Obj.new_block 0 size) : Obj.t array) in
+           (* build a cell to force allocation, hence signals *)
+           ignore (Some (new_env.(0) <- x));
+           code new_env)
           : Obj.t array -> Obj.t)
       else
         (Obj.magic (fun env x ->
-             let new_env = (Obj.obj (Obj.new_block 0 size) : Obj.t array) in
-             ignore (Some (new_env.(0) <- x));
-             for i = 0 to last_copy do
-               new_env.(dest.(i)) <- env.(source.(i))
-             done;
-             code new_env)
+           let new_env = (Obj.obj (Obj.new_block 0 size) : Obj.t array) in
+           ignore (Some (new_env.(0) <- x));
+           for i = 0 to last_copy do
+             new_env.(dest.(i)) <- env.(source.(i))
+           done;
+           code new_env)
           : Obj.t array -> Obj.t)
     else (
       let pred_id = pred last_id in
@@ -255,20 +255,20 @@ and expression alloc = function
         if last_copy = -1
         then
           (Obj.magic (fun _ l x ->
-               let new_env = (Obj.obj (Obj.new_block 0 size) : Obj.t array) in
-               new_env.(last_id) <- x;
-               copy_arg pred_id l new_env;
-               code new_env)
+             let new_env = (Obj.obj (Obj.new_block 0 size) : Obj.t array) in
+             new_env.(last_id) <- x;
+             copy_arg pred_id l new_env;
+             code new_env)
             : Obj.t array -> Obj.t -> Obj.t)
         else
           (Obj.magic (fun env l x ->
-               let new_env = (Obj.obj (Obj.new_block 0 size) : Obj.t array) in
-               new_env.(last_id) <- x;
-               copy_arg pred_id l new_env;
-               for i = 0 to last_copy do
-                 new_env.(dest.(i)) <- env.(source.(i))
-               done;
-               code new_env)
+             let new_env = (Obj.obj (Obj.new_block 0 size) : Obj.t array) in
+             new_env.(last_id) <- x;
+             copy_arg pred_id l new_env;
+             for i = 0 to last_copy do
+               new_env.(dest.(i)) <- env.(source.(i))
+             done;
+             code new_env)
             : Obj.t array -> Obj.t -> Obj.t)
       in
       let rec make_code n code =
@@ -350,7 +350,7 @@ and expression alloc = function
       | [] -> last_code env
       | coden :: l ->
         (try coden env with
-        | Match_failure -> try_matching env l)
+         | Match_failure -> try_matching env l)
     in
     if need_eval
     then (fun env ->
@@ -368,12 +368,12 @@ and expression alloc = function
        let i = find_alloc alloc id in
        fun env -> Obj.repr (env.(i) <- code env)
      with
-    | Not_found ->
-      (try
-         let oref = IdMap.find id !global_env in
-         fun env -> Obj.repr (oref := code env)
-       with
-      | Not_found -> failwith (id.name ^ " not found")))
+     | Not_found ->
+       (try
+          let oref = IdMap.find id !global_env in
+          fun env -> Obj.repr (oref := code env)
+        with
+        | Not_found -> failwith (id.name ^ " not found")))
   | UEfor (id, e1, dir, e2, e) ->
     let i = add_alloc alloc id in
     let code1 = expression alloc e1
@@ -423,7 +423,7 @@ let compile_commands ucmds idents =
       try env.(IdMap.find id alloc.table) with
       | Not_found ->
         (try !(IdMap.find id !global_env) with
-        | Not_found -> failwith "Compile.compile_commands"))
+         | Not_found -> failwith "Compile.compile_commands"))
     idents
 ;;
 
@@ -431,7 +431,7 @@ let prealloc_idents cmds =
   List.flatten
     (List.map
        (function
-         | UEfun l -> List.map fst l
-         | _ -> [])
+        | UEfun l -> List.map fst l
+        | _ -> [])
        cmds)
 ;;

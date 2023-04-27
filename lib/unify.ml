@@ -58,7 +58,7 @@ let rec subst s ty =
   match repr ty with
   | Tvar tv as ty ->
     (try List.assq tv s with
-    | Not_found -> ty)
+     | Not_found -> ty)
   | ty -> map_type (subst s) ty
 ;;
 
@@ -74,8 +74,8 @@ let expand = function
   | Tconstr (id, tyl) ->
     let info = IdMap.find id !types_map in
     (match info.ti_kind with
-    | Kabbrev ty -> subst (List.combine info.ti_params tyl) ty
-    | _ -> raise Not_found)
+     | Kabbrev ty -> subst (List.combine info.ti_params tyl) ty
+     | _ -> raise Not_found)
   | _ -> raise Not_found
 ;;
 
@@ -107,9 +107,9 @@ let rec unify ty1 ty2 =
       List.iter2 unify tl1 tl2
     | _ ->
       (try unify (expand ty1) ty2 with
-      | Not_found ->
-        (try unify ty1 (expand ty2) with
-        | Not_found -> raise Unify)))
+       | Not_found ->
+         (try unify ty1 (expand ty2) with
+          | Not_found -> raise Unify)))
 ;;
 
 let filter_arrow ty =

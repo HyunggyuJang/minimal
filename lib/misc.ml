@@ -12,7 +12,7 @@ let rec get_var = function
   | [] -> ""
   | v :: rem ->
     (try Sys.getenv v with
-    | Not_found -> get_var rem)
+     | Not_found -> get_var rem)
 ;;
 
 let suffix s1 s2 =

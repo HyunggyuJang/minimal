@@ -16,9 +16,9 @@ let rec pattern pat =
        then failwith ("In translate__pattern, " ^ s ^ " : need arguments");
        UPconst (Cint info.ci_tag), []
      with
-    | Not_found ->
-      let id = new_id s in
-      UPid id, [ s, id ])
+     | Not_found ->
+       let id = new_id s in
+       UPid id, [ s, id ])
   | SPconst c -> UPconst c, []
   | SPtuple [] -> UPconst (Cint 0), []
   | SPtuple l ->
@@ -45,8 +45,8 @@ let rec pattern pat =
            failwith
              ("In translate__pattern, " ^ s ^ " : wrong number of arguments"))
      with
-    | Not_found ->
-      failwith ("In translate__pattern, " ^ s ^ " : unkwnown constructor"))
+     | Not_found ->
+       failwith ("In translate__pattern, " ^ s ^ " : unkwnown constructor"))
   | SPrecord l ->
     let info = Hashtbl.find labels (fst (List.hd l)) in
     let arr = Array.make info.li_total UPany in
@@ -111,10 +111,10 @@ and expression bnds se =
        then failwith ("In translate__expression, " ^ s ^ " : need arguments");
        UEconst (Cint info.ci_tag)
      with
-    | Not_found ->
-      (try UEid (List.assoc s bnds) with
-      | Not_found ->
-        failwith ("In translate__expression : unbound identifier " ^ s)))
+     | Not_found ->
+       (try UEid (List.assoc s bnds) with
+        | Not_found ->
+          failwith ("In translate__expression : unbound identifier " ^ s)))
   | SEconst c -> UEconst c
   | SEtuple [] -> UEconst (Cint 0)
   | SEtuple l -> UEblock (0, List.map (expression bnds) l)
@@ -144,7 +144,7 @@ and expression bnds se =
            failwith
              ("In translate__expression, " ^ s ^ " : wrong number of arguments"))
      with
-    | Not_found -> UEapply (expression bnds e0, [ expression bnds e ]))
+     | Not_found -> UEapply (expression bnds e0, [ expression bnds e ]))
   | SEapply (e, l) -> UEapply (expression bnds e, List.map (expression bnds) l)
   | SEfunct (patl, e) ->
     let upatl, new_bnds = List.split (List.map pattern patl) in
@@ -168,10 +168,10 @@ and expression bnds se =
         cmds
     in
     (match last.sc_desc with
-    | SEexpr e -> UEseq (ucmds, expression bnds e)
-    | _ ->
-      let ucmd, _ = command bnds last in
-      UEseq (ucmds @ ucmd, UEconst (Cint 0)))
+     | SEexpr e -> UEseq (ucmds, expression bnds e)
+     | _ ->
+       let ucmd, _ = command bnds last in
+       UEseq (ucmds @ ucmd, UEconst (Cint 0)))
   | SEcase (e, cases) ->
     let ue = expression bnds e in
     let ucases =
@@ -186,8 +186,8 @@ and expression bnds se =
     UEifthenelse (expression bnds e1, expression bnds e2, expression bnds e3)
   | SEset (s, e) ->
     (try UEset (List.assoc s bnds, expression bnds e) with
-    | Not_found ->
-      failwith ("In translate__expression : unbound identifier " ^ s))
+     | Not_found ->
+       failwith ("In translate__expression : unbound identifier " ^ s))
   | SEgetfield (e1, s) ->
     let ue1 = expression bnds e1
     and info = Hashtbl.find labels s in

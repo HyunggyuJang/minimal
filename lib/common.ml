@@ -26,6 +26,7 @@ type ident =
   { name : string
   ; index : int
   }
+[@@deriving show]
 
 let id_count = ref 0
 

@@ -203,26 +203,26 @@ let do_phrase ph =
 
 let report_error lexbuf filename lines exn =
   (match exn with
-  | Parser.Error ->
-    printf
-      "> %a\n  Syntax error.@."
-      (output_location filename lines)
-      { first = lexeme_start_p lexbuf; last = lexeme_end_p lexbuf }
-  | Lexer.Lexical_error (_, start, stop) ->
-    printf
-      "> %a\n  Lexical error@."
-      (output_location filename lines)
-      { first = { dummy_pos with pos_cnum = start }
-      ; last = { dummy_pos with pos_cnum = stop }
-      }
-  | Type_error (err, loc) ->
-    printf "> %a  " (output_location filename lines) loc;
-    report_error err;
-    printf ".@."
-  | Line_too_long ->
-    printf "> Too long line in \"%s\", line %d.@." filename (linecnt lines)
-  | Sys.Break -> prerr_endline "Interrupted!"
-  | _ -> raise exn);
+   | Parser.Error ->
+     printf
+       "> %a\n  Syntax error.@."
+       (output_location filename lines)
+       { first = lexeme_start_p lexbuf; last = lexeme_end_p lexbuf }
+   | Lexer.Lexical_error (_, start, stop) ->
+     printf
+       "> %a\n  Lexical error@."
+       (output_location filename lines)
+       { first = { dummy_pos with pos_cnum = start }
+       ; last = { dummy_pos with pos_cnum = stop }
+       }
+   | Type_error (err, loc) ->
+     printf "> %a  " (output_location filename lines) loc;
+     report_error err;
+     printf ".@."
+   | Line_too_long ->
+     printf "> Too long line in \"%s\", line %d.@." filename (linecnt lines)
+   | Sys.Break -> prerr_endline "Interrupted!"
+   | _ -> raise exn);
   raise Toplevel
 ;;
 
@@ -237,9 +237,9 @@ let use require s =
     with
     | Sys_error _ ->
       (try name, open_in name with
-      | Sys_error _ ->
-        printf "> Could not open \"%s\".@." name;
-        raise Toplevel)
+       | Sys_error _ ->
+         printf "> Could not open \"%s\".@." name;
+         raise Toplevel)
   in
   if require && List.mem name !loaded_files
   then ()
@@ -255,10 +255,10 @@ let use require s =
     | exn ->
       close_in ic;
       (match exn with
-      | End_of_file ->
-        if not (List.mem name !loaded_files)
-        then loaded_files := name :: !loaded_files
-      | _ -> report_error lexbuf name (linetxt !lines) exn))
+       | End_of_file ->
+         if not (List.mem name !loaded_files)
+         then loaded_files := name :: !loaded_files
+       | _ -> report_error lexbuf name (linetxt !lines) exn))
 ;;
 
 builtins
@@ -299,7 +299,7 @@ let minimal () =
         with
         | exn ->
           (try report_error lexbuf "" (linetxt !lines) exn with
-          | Toplevel -> ())
+           | Toplevel -> ())
       with
       | Sys.Break ->
         eof_count := 0;

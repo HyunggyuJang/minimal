@@ -44,11 +44,11 @@ let rec type_expr def sty =
   match sty.st_desc with
   | STvar s ->
     (try List.assoc s !type_vars with
-    | Not_found ->
-      if def then error_message sty.st_loc ("unbound type variable '" ^ s);
-      let ty = Tvar (new_global_var ()) in
-      type_vars := (s, ty) :: !type_vars;
-      ty)
+     | Not_found ->
+       if def then error_message sty.st_loc ("unbound type variable '" ^ s);
+       let ty = Tvar (new_global_var ()) in
+       type_vars := (s, ty) :: !type_vars;
+       ty)
   | STarrow (st1, st2) -> Tarrow (type_expr def st1, type_expr def st2)
   | STtuple stl -> Ttuple (List.map (type_expr def) stl)
   | STconstr (s, stl) ->
@@ -60,7 +60,7 @@ let rec type_expr def sty =
          (List.combine info.ti_params (List.map (type_expr def) stl))
          info.ti_res
      with
-    | Not_found -> error_message sty.st_loc ("undefined type constructor " ^ s))
+     | Not_found -> error_message sty.st_loc ("undefined type constructor " ^ s))
 ;;
 
 let new_constrs = ref []
@@ -127,21 +127,21 @@ let hide_type loc s =
       | _ -> failwith "typechk__hyde_type"
     in
     (match info.ti_kind with
-    | Kbasic -> error_message loc ("type " ^ s ^ " is already abstract")
-    | Kabbrev _ -> ()
-    | Kvariant cl ->
-      if List.exists
-           (fun (s, _) -> (Hashtbl.find constructors s).ci_res != info.ti_res)
-           cl
-      then
-        error_message loc "cannot hide type, some constructors were redefined";
-      List.iter (fun (s, _) -> Hashtbl.remove constructors s) cl
-    | Krecord fl ->
-      if List.exists
-           (fun (s, _, _) -> (Hashtbl.find labels s).li_res != info.ti_res)
-           fl
-      then error_message loc "cannot hide type, some labels were redefined";
-      List.iter (fun (s, _, _) -> Hashtbl.remove labels s) fl);
+     | Kbasic -> error_message loc ("type " ^ s ^ " is already abstract")
+     | Kabbrev _ -> ()
+     | Kvariant cl ->
+       if List.exists
+            (fun (s, _) -> (Hashtbl.find constructors s).ci_res != info.ti_res)
+            cl
+       then
+         error_message loc "cannot hide type, some constructors were redefined";
+       List.iter (fun (s, _) -> Hashtbl.remove constructors s) cl
+     | Krecord fl ->
+       if List.exists
+            (fun (s, _, _) -> (Hashtbl.find labels s).li_res != info.ti_res)
+            fl
+       then error_message loc "cannot hide type, some labels were redefined";
+       List.iter (fun (s, _, _) -> Hashtbl.remove labels s) fl);
     Hashtbl.remove types s;
     let info =
       { ti_params = info.ti_params; ti_res = info.ti_res; ti_kind = Kbasic }
@@ -160,10 +160,10 @@ let instanciate_scheme ty =
     match repr ty with
     | Tvar tv when tv.level = generic_level ->
       (try List.assq tv !vars with
-      | Not_found ->
-        let ty = newvar () in
-        vars := (tv, ty) :: !vars;
-        ty)
+       | Not_found ->
+         let ty = newvar () in
+         vars := (tv, ty) :: !vars;
+         ty)
     | ty -> map_type inst ty
   in
   inst ty
@@ -208,9 +208,9 @@ let rec pattern pat =
        let _, ty_res = instanciate_constr info in
        ty_res, []
      with
-    | Not_found ->
-      let ty = newvar () in
-      ty, [ s, { vi_type = ty; vi_access = Immutable } ])
+     | Not_found ->
+       let ty = newvar () in
+       ty, [ s, { vi_type = ty; vi_access = Immutable } ])
   | SPconst c -> constant c, []
   | SPtuple l ->
     let tyl, bnds = pattern_list pat.sp_loc l in
@@ -233,16 +233,16 @@ let rec pattern pat =
          ty_res, bnds
        | _ ->
          (match spat.sp_desc with
-         | SPtuple l when List.length l = List.length ty_args ->
-           let ty_pats, bnds = pattern_list pat.sp_loc l in
-           do_list3 unify_pat l ty_pats ty_args;
-           ty_res, bnds
-         | _ ->
-           error_message
-             pat.sp_loc
-             ("wrong number of arguments for constructor " ^ s))
+          | SPtuple l when List.length l = List.length ty_args ->
+            let ty_pats, bnds = pattern_list pat.sp_loc l in
+            do_list3 unify_pat l ty_pats ty_args;
+            ty_res, bnds
+          | _ ->
+            error_message
+              pat.sp_loc
+              ("wrong number of arguments for constructor " ^ s))
      with
-    | Not_found -> error_message pat.sp_loc ("undefined constructor " ^ s))
+     | Not_found -> error_message pat.sp_loc ("undefined constructor " ^ s))
   | SPrecord l ->
     let labl, patl = List.split l in
     let ty_args, bnds = pattern_list pat.sp_loc patl in
@@ -294,7 +294,7 @@ let is_constructor e =
        let _ = Hashtbl.find constructors s in
        true
      with
-    | Not_found -> false)
+     | Not_found -> false)
   | _ -> false
 ;;
 
@@ -353,7 +353,7 @@ let rec expression bnds e =
        then error_message e.se_loc (s ^ " cannot be accessed here");
        instanciate_scheme info.vi_type
      with
-    | Not_found -> error_message e.se_loc ("unbound identifier " ^ s))
+     | Not_found -> error_message e.se_loc ("unbound identifier " ^ s))
   | SEconst c -> constant c
   | SEtuple l -> Ttuple (List.map (expression bnds) l)
   | SEarray el ->
@@ -382,17 +382,17 @@ let rec expression bnds e =
     let info = Hashtbl.find constructors s in
     let ty_args, ty_res = instanciate_constr info in
     (match ty_args, el with
-    | [], _ ->
-      error_message e1.se_loc ("constructor " ^ s ^ " takes no argument")
-    | [ ty_arg ], [ e ] ->
-      type_expect bnds ty_arg e;
-      ty_res
-    | _, [ { se_desc = SEtuple el; _ } ]
-      when List.length el = List.length ty_args ->
-      List.iter2 (type_expect bnds) ty_args el;
-      ty_res
-    | _ ->
-      error_message e1.se_loc ("wrong number of arguments for constructor " ^ s))
+     | [], _ ->
+       error_message e1.se_loc ("constructor " ^ s ^ " takes no argument")
+     | [ ty_arg ], [ e ] ->
+       type_expect bnds ty_arg e;
+       ty_res
+     | _, [ { se_desc = SEtuple el; _ } ]
+       when List.length el = List.length ty_args ->
+       List.iter2 (type_expect bnds) ty_args el;
+       ty_res
+     | _ ->
+       error_message e1.se_loc ("wrong number of arguments for constructor " ^ s))
   | SEapply
       (({ se_desc = SEid (("+" | "-" | "*" | "/" | "~") as op); _ } as e1), el)
     when el <> [] && (List.length el = 1 || op <> "~") && List.length el <= 2 ->
@@ -450,12 +450,12 @@ let rec expression bnds e =
   | SEseq cl ->
     let cl', res = split_last cl in
     (match res.sc_desc with
-    | SEexpr e1 ->
-      let bnds = List.fold_left command bnds cl' in
-      expression bnds e1
-    | _ ->
-      let _ = List.fold_left command bnds cl in
-      Ttuple [])
+     | SEexpr e1 ->
+       let bnds = List.fold_left command bnds cl' in
+       expression bnds e1
+     | _ ->
+       let _ = List.fold_left command bnds cl in
+       Ttuple [])
   | SEcase (e1, cases) ->
     let ty_arg = expression bnds e1
     and ty_res = newvar () in
@@ -484,7 +484,7 @@ let rec expression bnds e =
        type_expect bnds info.vi_type e1;
        Ttuple []
      with
-    | Not_found -> error_message e.se_loc ("unbound identifier " ^ s))
+     | Not_found -> error_message e.se_loc ("unbound identifier " ^ s))
   | SEgetfield (e1, s) ->
     (try
        let info = Hashtbl.find labels s in
@@ -492,7 +492,7 @@ let rec expression bnds e =
        type_expect bnds ty_rec e1;
        ty_arg
      with
-    | Not_found -> error_message e.se_loc ("undefined label " ^ s))
+     | Not_found -> error_message e.se_loc ("undefined label " ^ s))
   | SEsetfield (e1, s, e2) ->
     (try
        let info = Hashtbl.find labels s in
@@ -503,7 +503,7 @@ let rec expression bnds e =
        type_expect bnds ty_arg e2;
        Ttuple []
      with
-    | Not_found -> error_message e.se_loc ("undefined label " ^ s))
+     | Not_found -> error_message e.se_loc ("undefined label " ^ s))
   | SEfor (s, e1, _, e2, e3) ->
     let type_int = (List.assoc "int" basic_types).ti_res in
     type_expect bnds type_int e1;
@@ -532,13 +532,13 @@ and type_expect bnds ty_expected e =
 and statement bnds e =
   let ty = expression bnds e in
   (match repr ty with
-  | Tarrow _ ->
-    Printf.eprintf
-      "> Char %d-%d : Beware, this function is partially applied.\n"
-      e.se_loc.first.pos_cnum
-      e.se_loc.last.pos_cnum;
-    flush stderr
-  | _ -> ());
+   | Tarrow _ ->
+     Printf.eprintf
+       "> Char %d-%d : Beware, this function is partially applied.\n"
+       e.se_loc.first.pos_cnum
+       e.se_loc.last.pos_cnum;
+     flush stderr
+   | _ -> ());
   ty
 
 and command bnds cmd =

@@ -134,32 +134,32 @@ let rec print_val prio depth ty obj =
   | Tconstr (id, []) when same_id id id_char ->
     print_char '\'';
     (match Obj.obj obj with
-    | 96 -> print_char '\''
-    | 39 -> print_string "\\'"
-    | c when c > 0xff -> print_string (string_of_array [| c |])
-    | c -> print_string (Char.escaped (char_of_int c)));
+     | 96 -> print_char '\''
+     | 39 -> print_string "\\'"
+     | c when c > 0xff -> print_string (string_of_array [| c |])
+     | c -> print_string (Char.escaped (char_of_int c)));
     print_char '\''
   | Tconstr (id, []) when same_id id id_float -> print_float (Obj.obj obj)
   | Tconstr (id, [ ty ]) when same_id id id_array ->
     (match repr ty with
-    | Tconstr (id, []) when same_id id id_char ->
-      print_char '"';
-      Array.iter
-        (function
+     | Tconstr (id, []) when same_id id id_char ->
+       print_char '"';
+       Array.iter
+         (function
           | 96 -> print_char '\''
           | 34 -> print_string "\\\""
           | c when c > 0xff -> print_string (string_of_array [| c |])
           | c -> print_string (Char.escaped (char_of_int c)))
-        (Obj.obj obj : wchar array);
-      print_char '"'
-    | _ ->
-      open_hovbox 2;
-      print_string "[|";
-      cautious
-        (print_list (print_val 0 (depth - 1) ty) print_comma)
-        (Array.to_list (Obj.obj obj));
-      print_string "|]";
-      close_box ())
+         (Obj.obj obj : wchar array);
+       print_char '"'
+     | _ ->
+       open_hovbox 2;
+       print_string "[|";
+       cautious
+         (print_list (print_val 0 (depth - 1) ty) print_comma)
+         (Array.to_list (Obj.obj obj));
+       print_string "|]";
+       close_box ())
   | Tconstr (id, [ ty ]) when same_id id id_list ->
     open_hovbox 1;
     print_string "[";
@@ -189,29 +189,29 @@ let rec print_val prio depth ty obj =
               print_string name;
               print_space ();
               (match tyl' with
-              | [ ty' ] ->
-                cautious
-                  (print_val 1 (depth - 1) (subst s ty'))
-                  (Obj.field obj 0)
-              | _ ->
-                cautious (print_val 1 (depth - 1) (subst s (Ttuple tyl'))) obj);
+               | [ ty' ] ->
+                 cautious
+                   (print_val 1 (depth - 1) (subst s ty'))
+                   (Obj.field obj 0)
+               | _ ->
+                 cautious (print_val 1 (depth - 1) (subst s (Ttuple tyl'))) obj);
               if prio > 0 then print_string ")";
               close_box ())
           with
-         | Not_found -> print_string "<unknown constructor>")
+          | Not_found -> print_string "<unknown constructor>")
        | Krecord l ->
          open_hovbox 1;
          print_string "{";
          print_list
            (cautious (fun ((name, ty, _), obj) ->
-                printf "%s=@;<0 0>" name;
-                print_val 0 (depth - 1) (subst s ty) obj))
+              printf "%s=@;<0 0>" name;
+              print_val 0 (depth - 1) (subst s ty) obj))
            print_comma
            (List.combine l (Array.to_list (Obj.obj obj)));
          print_string "}";
          close_box ()
      with
-    | Not_found -> print_string "<unknown type>")
+     | Not_found -> print_string "<unknown type>")
 ;;
 
 let print_value ty obj =

@@ -85,20 +85,20 @@ module Trace = struct
       let tracing = trace_obj (s ^ " *") ty2 in
       fun obj ->
         Obj.repr (fun arg ->
-            open_hovbox 2;
-            print_string (s ^ " <=");
-            print_space ();
-            Printer.print_value ty1 arg;
-            close_box ();
-            print_newline ();
-            let res = Obj.obj obj arg in
-            open_hovbox 2;
-            print_string (s ^ " * =");
-            print_space ();
-            Printer.print_value ty2 res;
-            close_box ();
-            print_newline ();
-            tracing res)
+          open_hovbox 2;
+          print_string (s ^ " <=");
+          print_space ();
+          Printer.print_value ty1 arg;
+          close_box ();
+          print_newline ();
+          let res = Obj.obj obj arg in
+          open_hovbox 2;
+          print_string (s ^ " * =");
+          print_space ();
+          Printer.print_value ty2 res;
+          close_box ();
+          print_newline ();
+          tracing res)
     | _ -> fun obj -> obj
   ;;
 
@@ -106,24 +106,24 @@ module Trace = struct
     let tracing = trace_obj (s ^ " ..") ty_res in
     fun args obj ->
       Obj.repr (fun arg ->
-          open_hovbox 2;
-          print_string (s ^ " <=");
-          List.iter2
-            (fun arg ty ->
-              print_space ();
-              Printer.print_value ty arg)
-            (List.rev (arg :: args))
-            (List.rev (ty_arg :: ty_args));
-          close_box ();
-          print_newline ();
-          let res = Obj.obj obj arg in
-          open_hovbox 2;
-          print_string (s ^ " =>");
-          print_space ();
-          Printer.print_value ty_res res;
-          close_box ();
-          print_newline ();
-          tracing res)
+        open_hovbox 2;
+        print_string (s ^ " <=");
+        List.iter2
+          (fun arg ty ->
+            print_space ();
+            Printer.print_value ty arg)
+          (List.rev (arg :: args))
+          (List.rev (ty_arg :: ty_args));
+        close_box ();
+        print_newline ();
+        let res = Obj.obj obj arg in
+        open_hovbox 2;
+        print_string (s ^ " =>");
+        print_space ();
+        Printer.print_value ty_res res;
+        close_box ();
+        print_newline ();
+        tracing res)
   ;;
 
   let rec tracen_obj s n ty_args ty_res =
@@ -139,8 +139,8 @@ module Trace = struct
         let tracing = tracen_obj s (n - 1) (ty_arg :: ty_args) ty_res in
         fun args obj ->
           Obj.repr (fun arg ->
-              let partial = Obj.obj obj arg in
-              tracing (arg :: args) partial))
+            let partial = Obj.obj obj arg in
+            tracing (arg :: args) partial))
     | _ -> failwith "builtins__tracen_obj"
   ;;
 
@@ -215,9 +215,9 @@ let read_file name =
          data := input_line ic :: !data
        done
      with
-    | End_of_file ->
-      close_in ic;
-      raise Exit);
+     | End_of_file ->
+       close_in ic;
+       raise Exit);
     []
   with
   | _ -> List.rev_map array_of_string !data

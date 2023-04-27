@@ -12,6 +12,7 @@ and type_var =
   { mutable link : type_expr option
   ; mutable level : int
   }
+[@@deriving show]
 
 type value_info =
   { vi_type : type_expr

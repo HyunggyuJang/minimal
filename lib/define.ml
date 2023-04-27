@@ -20,8 +20,8 @@ let make_ti id params kind =
 let add_type name info =
   Hashtbl.add types name info;
   (match info.ti_res with
-  | Tconstr (id, _) -> types_map := IdMap.add id info !types_map
-  | _ -> failwith "define__add_info");
+   | Tconstr (id, _) -> types_map := IdMap.add id info !types_map
+   | _ -> failwith "define__add_info");
   match info.ti_kind with
   | Kabbrev _ -> ()
   | Kvariant l ->
