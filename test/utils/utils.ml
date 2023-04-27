@@ -8,3 +8,5 @@ let parse s =
   | SEexpr exp -> exp
   | _ -> assert false
 ;;
+
+let dummy_loc = { first = Lexing.dummy_pos; last = Lexing.dummy_pos }

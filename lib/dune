@@ -2,7 +2,7 @@
  (name minimal)
  (inline_tests)
  (preprocess
-  (pps ppx_inline_test ppx_deriving.show ppx_deriving.eq)))
+  (pps ppx_inline_test ppx_expect ppx_deriving.show ppx_deriving.eq)))
 
 (menhir
  (modules parser))

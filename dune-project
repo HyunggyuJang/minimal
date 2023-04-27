@@ -12,5 +12,6 @@
     ocaml
     fmt
     ppx_inline_test
+    ppx_expect
     (alcotest :with-test)
     (ocamlformat :with-test)))

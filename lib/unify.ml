@@ -25,6 +25,7 @@ let map_type f = function
   | Tconstr (id, tyl) -> Tconstr (id, List.map f tyl)
 ;;
 
+(* Apply [f] to [type_def] recursively, except for the toplevel [Tvar] *)
 let do_type f = function
   | Tvar _ -> ()
   | Tarrow (ty1, ty2) ->
@@ -32,6 +33,28 @@ let do_type f = function
     f ty2
   | Ttuple tyl -> List.iter f tyl
   | Tconstr (_, tyl) -> List.iter f tyl
+;;
+
+(* Do nothing for var *)
+let%expect_test _ =
+  do_type (pp_type_expr Format.std_formatter) (Tvar { link = None; level = 0 });
+  [%expect {| |}]
+;;
+
+(* Do nothing for empty argument constructor *)
+let%expect_test _ =
+  do_type
+    (pp_type_expr Format.std_formatter)
+    (Tconstr ({ name = "_"; index = 0 }, []));
+  [%expect {| |}]
+;;
+
+(* Do something for the argument list *)
+let%expect_test _ =
+  do_type
+    (pp_type_expr Format.std_formatter)
+    (Tconstr ({ name = "_"; index = 0 }, [ Tvar { link = None; level = 0 } ]));
+  [%expect {| (Types.Tvar { Types.link = None; level = 0 }) |}]
 ;;
 
 let rec repr = function
@@ -42,16 +65,97 @@ let rec repr = function
   | ty -> ty
 ;;
 
+let%test _ =
+  let test_var = Tvar { link = None; level = 0 } in
+  repr test_var = test_var
+;;
+
+let%test _ =
+  let test_var = Tvar { link = None; level = 0 } in
+  let test_linked_var = Tvar { link = Some test_var; level = 0 } in
+  repr test_linked_var = test_var
+;;
+
+let%test _ =
+  let test_var = Tvar { link = None; level = 0 } in
+  let test_linked_var = Tvar { link = Some test_var; level = 0 } in
+  let test_linked_linked_var =
+    Tvar { link = Some test_linked_var; level = 0 }
+  in
+  repr test_linked_linked_var = test_var
+  && test_linked_linked_var = test_linked_var
+;;
+
 let rec generalize ty =
   match repr ty with
   | Tvar tv -> if tv.level > !current_level then tv.level <- generic_level
   | ty -> do_type generalize ty
 ;;
 
+let%test _ =
+  current_level := 5;
+  let top_var = Tvar { link = None; level = 4 } in
+  generalize top_var;
+  top_var = Tvar { link = None; level = 4 }
+;;
+
+let%test _ =
+  current_level := 5;
+  let top_var = Tvar { link = None; level = 6 } in
+  generalize top_var;
+  top_var = Tvar { link = None; level = -1 }
+;;
+
+let%test _ =
+  current_level := 3;
+  let constr =
+    Tconstr ({ name = "_"; index = 4 }, [ Tvar { link = None; level = 2 } ])
+  in
+  let constr2 =
+    Tconstr ({ name = "_"; index = 2 }, [ Tvar { link = None; level = 4 } ])
+  in
+  generalize constr;
+  generalize constr2;
+  constr
+  = Tconstr ({ name = "_"; index = 4 }, [ Tvar { link = None; level = 2 } ])
+  && constr2
+     = Tconstr ({ name = "_"; index = 2 }, [ Tvar { link = None; level = -1 } ])
+;;
+
 let rec make_nongen ty =
   match repr ty with
   | Tvar tv -> if tv.level > !current_level then tv.level <- !current_level
   | ty -> do_type make_nongen ty
+;;
+
+let%test _ =
+  current_level := 5;
+  let top_var = Tvar { link = None; level = 4 } in
+  make_nongen top_var;
+  top_var = Tvar { link = None; level = 4 }
+;;
+
+let%test _ =
+  current_level := 5;
+  let top_var = Tvar { link = None; level = 6 } in
+  make_nongen top_var;
+  top_var = Tvar { link = None; level = 5 }
+;;
+
+let%test _ =
+  current_level := 3;
+  let constr =
+    Tconstr ({ name = "_"; index = 4 }, [ Tvar { link = None; level = 2 } ])
+  in
+  let constr2 =
+    Tconstr ({ name = "_"; index = 2 }, [ Tvar { link = None; level = 4 } ])
+  in
+  make_nongen constr;
+  make_nongen constr2;
+  constr
+  = Tconstr ({ name = "_"; index = 4 }, [ Tvar { link = None; level = 2 } ])
+  && constr2
+     = Tconstr ({ name = "_"; index = 2 }, [ Tvar { link = None; level = 3 } ])
 ;;
 
 let rec subst s ty =

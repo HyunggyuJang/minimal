@@ -108,11 +108,7 @@ let test_tokens () =
     failure_table
 ;;
 
-let make_expression desc =
-  { se_desc = desc
-  ; se_loc = { first = Lexing.dummy_pos; last = Lexing.dummy_pos }
-  }
-;;
+let make_expression desc = { se_desc = desc; se_loc = dummy_loc }
 
 let test_simple_expr () =
   let success_table =
@@ -149,6 +145,11 @@ let test_simple_expr () =
             ; make_expression @@ SEconst (Cint 8)
             ] )
       , "test.[8]" )
+    ; ( "function"
+      , SEfunct
+          ( [ { sp_desc = SPid "x"; sp_loc = dummy_loc } ]
+          , make_expression @@ SEid "x" )
+      , "fn x => x" )
     ]
   in
   List.iter

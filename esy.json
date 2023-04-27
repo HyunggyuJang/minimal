@@ -5,8 +5,10 @@
     "buildsInSource": "_build"
   },
   "scripts": {
+    "build-all": "dune build",
     "watch": "dune build --watch --terminal-persistence=clear-on-rebuild",
     "test": "dune runtest",
+    "promote": "dune runtest --auto-promote",
     "test-fmt": "dune build @fmt",
     "fix": "dune build @fmt --auto-promote",
     "repl": "rlwrap dune exec minimal"
@@ -16,6 +18,7 @@
     "@opam/menhir": "20230415",
     "@opam/fmt": "0.9.0",
     "@opam/ppx_inline_test": "v0.15.0",
+    "@opam/ppx_expect": "v0.15.0",
     "@opam/ppx_deriving": "^v5",
     "ocaml": "4.14.0"
   },
