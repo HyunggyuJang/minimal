@@ -24,6 +24,7 @@ type type_info =
   ; ti_res : type_expr
   ; ti_kind : type_kind
   }
+[@@deriving show]
 
 and type_kind =
   | Kabbrev of type_expr
