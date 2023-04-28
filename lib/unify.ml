@@ -158,6 +158,7 @@ let%test _ =
      = Tconstr ({ name = "_"; index = 2 }, [ Tvar { link = None; level = 3 } ])
 ;;
 
+(* Substitute & update link (side effect) *)
 let rec subst s ty =
   match repr ty with
   | Tvar tv as ty ->
@@ -166,12 +167,61 @@ let rec subst s ty =
   | ty -> map_type (subst s) ty
 ;;
 
+let%test _ =
+  let var1 = { link = None; level = 0 } in
+  let test_var = Tvar var1 in
+  let var2 = { link = Some test_var; level = 0 } in
+  let test_linked_var = Tvar var2 in
+  let var3 = { link = Some test_linked_var; level = 0 } in
+  let test_linked_linked_var = Tvar var3 in
+  let s =
+    [ var1, test_linked_linked_var; var2, test_var; var3, test_linked_var ]
+  in
+  let tvars = [ test_var; test_linked_var; test_linked_linked_var ] in
+  (not
+     (List.for_all2
+        (fun tvar typ -> subst s tvar = typ)
+        tvars
+        (List.init 3 (fun _ -> test_linked_var))))
+  (* First try fails *)
+  && (List.iter (fun tvar -> ignore (subst s tvar)) tvars;
+      (* After side effect, second try passes *)
+      List.for_all2
+        (fun tvar typ -> subst s tvar = typ)
+        tvars
+        (List.init 3 (fun _ -> test_linked_var)))
+  && test_linked_linked_var = test_linked_var
+  && test_linked_var
+     = Tvar { link = Some (Tvar { link = None; level = 0 }); level = 0 }
+;;
+
 let rec occur tv ty =
   match repr ty with
   | Tvar tv' ->
     if tv == tv' then raise Unify;
     if tv'.level > tv.level then tv'.level <- tv.level
   | ty -> do_type (occur tv) ty
+;;
+
+let%test _ =
+  let var0 = { link = None; level = 2 } in
+  let var1 = { link = None; level = 3 } in
+  let test_var = Tvar var1 in
+  let var2 = { link = Some test_var; level = 2 } in
+  let test_linked_var = Tvar var2 in
+  let var3 = { link = Some test_linked_var; level = 1 } in
+  let test_linked_linked_var = Tvar var3 in
+  let tvars = [ test_var; test_linked_var; test_linked_linked_var ] in
+  List.iter (occur var0) tvars;
+  (try
+     occur var1 test_var;
+     false
+   with
+   | Unify -> true
+   | _ -> false)
+  && test_var = Tvar { link = None; level = 2 }
+  && test_linked_var = Tvar { link = Some test_var; level = 2 }
+  && test_linked_linked_var = Tvar { link = Some test_var; level = 1 }
 ;;
 
 let expand = function
