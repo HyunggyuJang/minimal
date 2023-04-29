@@ -37,33 +37,57 @@ let basic_types =
 
 List.iter (fun (name, info) -> add_type name info) basic_types
 
-(* Inspect added basic types in [types] *)
+(* Inspect added basic types in [types_map] *)
 let%expect_test _ =
-  Hashtbl.iter
-    (fun name info ->
+  IdMap.iter
+    (fun id info ->
       Format.printf
-        "@[<hov 2>%s has type info@ %a@]@ "
-        name
-        Types.pp_type_info
+        "@[<hov 2>%a has type info@ %a@]@ "
+        pp_ident
+        id
+        pp_type_info
         info)
-    Define.types;
+    !types_map;
   [%expect
     {|
-    char has type info
+    { Common.name = "int"; index = 1 } has type info
+      { Types.ti_params = [];
+        ti_res = (Types.Tconstr ({ Common.name = "int"; index = 1 }, []));
+        ti_kind = Types.Kbasic }
+    { Common.name = "char"; index = 2 } has type info
       { Types.ti_params = [];
         ti_res = (Types.Tconstr ({ Common.name = "char"; index = 2 }, []));
         ti_kind = Types.Kbasic }
-    array has type info
-      { Types.ti_params = [{ Types.link = None; level = 3 }];
+    { Common.name = "float"; index = 3 } has type info
+      { Types.ti_params = [];
+        ti_res = (Types.Tconstr ({ Common.name = "float"; index = 3 }, []));
+        ti_kind = Types.Kbasic }
+    { Common.name = "array"; index = 4 } has type info
+      { Types.ti_params = [{ Types.link = None; level = 0 }];
         ti_res =
         (Types.Tconstr ({ Common.name = "array"; index = 4 },
-           [(Types.Tvar { Types.link = None; level = 3 })]));
+           [(Types.Tvar { Types.link = None; level = 0 })]));
         ti_kind = Types.Kbasic }
-    bool has type info
+    { Common.name = "bool"; index = 5 } has type info
       { Types.ti_params = [];
         ti_res = (Types.Tconstr ({ Common.name = "bool"; index = 5 }, []));
         ti_kind = (Types.Kvariant [("false", []); ("true", [])]) }
-    string has type info
+    { Common.name = "list"; index = 6 } has type info
+      { Types.ti_params = [{ Types.link = None; level = 0 }];
+        ti_res =
+        (Types.Tconstr ({ Common.name = "list"; index = 6 },
+           [(Types.Tvar { Types.link = None; level = 0 })]));
+        ti_kind =
+        (Types.Kvariant
+           [("[]", []);
+             ("::",
+              [(Types.Tvar { Types.link = None; level = 0 });
+                (Types.Tconstr ({ Common.name = "list"; index = 6 },
+                   [(Types.Tvar { Types.link = None; level = 0 })]))
+                ])
+             ])
+        }
+    { Common.name = "string"; index = 7 } has type info
       { Types.ti_params = [];
         ti_res = (Types.Tconstr ({ Common.name = "string"; index = 7 }, []));
         ti_kind =
@@ -71,31 +95,22 @@ let%expect_test _ =
            (Types.Tconstr ({ Common.name = "array"; index = 4 },
               [(Types.Tconstr ({ Common.name = "char"; index = 2 }, []))])))
         }
-    unit has type info
+    { Common.name = "unit"; index = 8 } has type info
       { Types.ti_params = [];
         ti_res = (Types.Tconstr ({ Common.name = "unit"; index = 8 }, []));
-        ti_kind = (Types.Kabbrev (Types.Ttuple [])) }
-    int has type info
-      { Types.ti_params = [];
-        ti_res = (Types.Tconstr ({ Common.name = "int"; index = 1 }, []));
-        ti_kind = Types.Kbasic }
-    float has type info
-      { Types.ti_params = [];
-        ti_res = (Types.Tconstr ({ Common.name = "float"; index = 3 }, []));
-        ti_kind = Types.Kbasic }
-    list has type info
-      { Types.ti_params = [{ Types.link = None; level = 3 }];
-        ti_res =
-        (Types.Tconstr ({ Common.name = "list"; index = 6 },
-           [(Types.Tvar { Types.link = None; level = 3 })]));
-        ti_kind =
-        (Types.Kvariant
-           [("[]", []);
-             ("::",
-              [(Types.Tvar { Types.link = None; level = 3 });
-                (Types.Tconstr ({ Common.name = "list"; index = 6 },
-                   [(Types.Tvar { Types.link = None; level = 3 })]))
-                ])
-             ])
-        } |}]
+        ti_kind = (Types.Kabbrev (Types.Ttuple [])) } |}]
+;;
+
+let%test _ =
+  let str = Tconstr ({ name = "string"; index = 7 }, []) in
+  Unify.expand str = Tconstr (id_array, [ Tconstr (id_char, []) ])
+;;
+
+let%test _ =
+  let str = Tconstr ({ name = "string"; index = 7 }, []) in
+  let var_array = Tconstr (id_array, [ Tvar { link = None; level = 2 } ]) in
+  Unify.unify str var_array;
+  var_array
+  = Tconstr
+      (id_array, [ Tvar { link = Some (Tconstr (id_char, [])); level = 2 } ])
 ;;

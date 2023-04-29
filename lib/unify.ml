@@ -93,20 +93,25 @@ let rec generalize ty =
 ;;
 
 let%test _ =
+  let old_level = !current_level in
   current_level := 5;
   let top_var = Tvar { link = None; level = 4 } in
   generalize top_var;
+  current_level := old_level;
   top_var = Tvar { link = None; level = 4 }
 ;;
 
 let%test _ =
+  let old_level = !current_level in
   current_level := 5;
   let top_var = Tvar { link = None; level = 6 } in
   generalize top_var;
+  current_level := old_level;
   top_var = Tvar { link = None; level = -1 }
 ;;
 
 let%test _ =
+  let old_level = !current_level in
   current_level := 3;
   let constr =
     Tconstr ({ name = "_"; index = 4 }, [ Tvar { link = None; level = 2 } ])
@@ -116,6 +121,7 @@ let%test _ =
   in
   generalize constr;
   generalize constr2;
+  current_level := old_level;
   constr
   = Tconstr ({ name = "_"; index = 4 }, [ Tvar { link = None; level = 2 } ])
   && constr2
@@ -129,20 +135,25 @@ let rec make_nongen ty =
 ;;
 
 let%test _ =
+  let old_level = !current_level in
   current_level := 5;
   let top_var = Tvar { link = None; level = 4 } in
   make_nongen top_var;
+  current_level := old_level;
   top_var = Tvar { link = None; level = 4 }
 ;;
 
 let%test _ =
+  let old_level = !current_level in
   current_level := 5;
   let top_var = Tvar { link = None; level = 6 } in
   make_nongen top_var;
+  current_level := old_level;
   top_var = Tvar { link = None; level = 5 }
 ;;
 
 let%test _ =
+  let old_level = !current_level in
   current_level := 3;
   let constr =
     Tconstr ({ name = "_"; index = 4 }, [ Tvar { link = None; level = 2 } ])
@@ -152,6 +163,7 @@ let%test _ =
   in
   make_nongen constr;
   make_nongen constr2;
+  current_level := old_level;
   constr
   = Tconstr ({ name = "_"; index = 4 }, [ Tvar { link = None; level = 2 } ])
   && constr2
@@ -233,6 +245,8 @@ let expand = function
   | _ -> raise Not_found
 ;;
 
+(* See [Predef] for [expand]'s unit test *)
+
 let rec unify ty1 ty2 =
   let ty1 = repr ty1
   and ty2 = repr ty2 in
@@ -264,6 +278,42 @@ let rec unify ty1 ty2 =
        | Not_found ->
          (try unify ty1 (expand ty2) with
           | Not_found -> raise Unify)))
+;;
+
+let%test _ =
+  let tvar1, tvar2 =
+    Tvar { link = None; level = 0 }, Tvar { link = None; level = 0 }
+  in
+  unify tvar1 tvar2;
+  tvar1 = Tvar { link = Some tvar2; level = 0 }
+  && tvar2 = Tvar { link = None; level = 0 }
+;;
+
+let%test _ =
+  let tvar1, tconstr =
+    Tvar { link = None; level = 0 }, Tconstr ({ name = "test"; index = 0 }, [])
+  in
+  unify tvar1 tconstr;
+  tvar1 = Tvar { link = Some tconstr; level = 0 }
+  && tconstr = Tconstr ({ name = "test"; index = 0 }, [])
+;;
+
+let%test _ =
+  let tvar1, tconstr =
+    Tvar { link = None; level = 0 }, Tconstr ({ name = "test"; index = 0 }, [])
+  in
+  unify tconstr tvar1;
+  tvar1 = Tvar { link = Some tconstr; level = 0 }
+  && tconstr = Tconstr ({ name = "test"; index = 0 }, [])
+;;
+
+let%test _ =
+  let tvar1, tvar2 =
+    Tvar { link = None; level = 0 }, Tvar { link = None; level = 2 }
+  in
+  unify tvar1 tvar2;
+  tvar1 = Tvar { link = Some tvar2; level = 0 }
+  && tvar2 = Tvar { link = None; level = 0 }
 ;;
 
 let filter_arrow ty =
