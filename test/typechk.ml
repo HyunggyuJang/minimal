@@ -14,7 +14,7 @@ let test_constants () =
   in
   List.iter
     (fun (name, expected, input) ->
-      parse input
+      parse_exp input
       |> Typechk.expression StrMap.empty
       |> Alcotest.check type_expr_testable name expected)
     test_cases

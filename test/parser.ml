@@ -48,7 +48,7 @@ let print_token : Parser.token -> string =
   | OF -> "OF"
   | OR -> "OR"
   | PREFIX _ -> "PREFIX"
-  | QUOTED _ -> "QUOTED"
+  | QUOTED s -> "QUOTED " ^ s
   | RBRACE -> "RBRACE"
   | RBRACKET -> "RBRACKET"
   | RPAREN -> "RPAREN"
@@ -82,6 +82,7 @@ let test_tokens () =
     ; "infix0: greater than", "INFIX0", ">"
     ; "infix0: less than or equals to", "INFIX0", "<="
     ; "equal", "EQUAL", "="
+    ; "quoted", "QUOTED hi", "'hi"
     ]
   in
   let failure_table =
@@ -154,7 +155,7 @@ let test_simple_expr () =
   in
   List.iter
     (fun (name, expected, input) ->
-      parse input
+      parse_exp input
       |> Alcotest.check expression_testable name (make_expression expected))
     success_table
 ;;
@@ -173,7 +174,7 @@ let test_expr () =
   in
   List.iter
     (fun (name, expected, input) ->
-      Alcotest.check expression_testable name (parse expected) (parse input))
+      Alcotest.check expression_testable name (parse_exp expected) (parse_exp input))
     success_table
 ;;
 

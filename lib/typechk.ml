@@ -63,6 +63,26 @@ let rec type_expr def sty =
      | Not_found -> error_message sty.st_loc ("undefined type constructor " ^ s))
 ;;
 
+let%test _ =
+  let str = STconstr ("string", []) in
+  let dummy_loc = { first = Lexing.dummy_pos; last = Lexing.dummy_pos } in
+  type_expr false { st_desc = str; st_loc = dummy_loc }
+  = Tconstr ({ name = "string"; index = 7 }, [])
+;;
+
+let%test _ =
+  let dummy_loc = { first = Lexing.dummy_pos; last = Lexing.dummy_pos } in
+  let var_a = { st_desc = STvar "a"; st_loc = dummy_loc } in
+  let func =
+    STarrow
+      (var_a, { st_desc = STconstr ("list", [ var_a ]); st_loc = dummy_loc })
+  in
+  let tvar_a = Tvar { link = None; level = 1 } in
+  type_expr false { st_desc = func; st_loc = dummy_loc }
+  = Tarrow (tvar_a, Tconstr ({ name = "list"; index = 6 }, [ tvar_a ]))
+  && type_expr false var_a = tvar_a
+;;
+
 let new_constrs = ref []
 and new_labels = ref []
 
