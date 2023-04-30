@@ -4,17 +4,18 @@ open Minimal.Syntax
 
 exception Utils
 
-let parse s =
-  Lexing.from_string s |> Parser.phrase Lexer.main
+let parse s = Lexing.from_string s |> Parser.phrase Lexer.main
 
 let parse_exp s =
   parse s |> fun e ->
   match (List.hd e).sc_desc with
   | SEexpr exp -> exp
   | _ -> assert false
+;;
 
 let rec diff_list l1 l2 =
   if l1 == l2 then [] else List.hd l1 :: diff_list (List.tl l1) l2
+;;
 
 let do_phrase s =
   let open Minimal in
@@ -24,8 +25,7 @@ let do_phrase s =
   let open Compile in
   try
     match List.hd (parse s) with
-    | { sc_desc = STtype dl; sc_loc } ->
-      add_typedef sc_loc dl;
+    | { sc_desc = STtype dl; sc_loc } -> add_typedef sc_loc dl
     | cmd ->
       let new_values = type_command !values cmd in
       let ucmds, new_idents = Translate.command !global_idents cmd in
@@ -38,14 +38,15 @@ let do_phrase s =
       (* Only add values that where not preallocated *)
       List.iter2
         (fun (s, id) obj ->
-           try
-             let _ = IdMap.find id !global_env in
-             ()
-           with
-           | Not_found -> add_value id obj (StrMap.find s new_values))
+          try
+            let _ = IdMap.find id !global_env in
+            ()
+          with
+          | Not_found -> add_value id obj (StrMap.find s new_values))
         idents
-        objs;
+        objs
   with
   | exn -> if Minimal.Builtins.handle exn then raise Utils else raise exn
+;;
 
 let dummy_loc = { first = Lexing.dummy_pos; last = Lexing.dummy_pos }

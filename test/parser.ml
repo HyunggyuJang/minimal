@@ -174,7 +174,11 @@ let test_expr () =
   in
   List.iter
     (fun (name, expected, input) ->
-      Alcotest.check expression_testable name (parse_exp expected) (parse_exp input))
+      Alcotest.check
+        expression_testable
+        name
+        (parse_exp expected)
+        (parse_exp input))
     success_table
 ;;
 
