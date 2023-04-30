@@ -18,6 +18,7 @@ type value_info =
   { vi_type : type_expr
   ; vi_access : access
   }
+[@@deriving show]
 
 type type_info =
   { ti_params : type_var list

@@ -2,9 +2,11 @@ module Typechk = Minimal.Typechk
 open Minimal.Types
 open Minimal.Common
 open Utils
+open Minimal.Define
 
 let type_expr_testable = Alcotest.testable pp_type_expr ( = )
 let type_info_testable = Alcotest.testable pp_type_info ( = )
+let value_info_testable = Alcotest.testable pp_value_info ( = )
 
 let test_constants () =
   let test_cases =
@@ -22,34 +24,39 @@ let test_constants () =
 ;;
 
 let test_record () =
-  let types_list_before =
-    Hashtbl.fold (fun _ info acc -> info :: acc) Minimal.Define.types []
-  in
   do_phrase {| type Test = { mutable a: int } |};
-  let types_list_after =
-    Hashtbl.fold (fun _ info acc -> info :: acc) Minimal.Define.types []
-  in
-  let diff_list l1 l2 =
-    let loop_over l' =
-      let rec loop l =
-        match l with
-        | [] -> []
-        | hd :: tl ->
-          if List.exists (fun x -> x = hd) l' then loop tl else hd :: loop tl
-      in
-      loop
-    in
-    loop_over l2 l1 @ loop_over l1 l2
-  in
-  Alcotest.(check @@ list type_info_testable)
+  Alcotest.check
+    type_info_testable
     "After declaring record type"
-    [ { ti_params = []
-      ; ti_res = Tconstr ({ name = "Test"; index = 9 }, [])
-      ; ti_kind =
-          Krecord [ "a", Tconstr ({ name = "int"; index = 1 }, []), Mutable ]
-      }
+    { ti_params = []
+    ; ti_res = Tconstr ({ name = "Test"; index = 9 }, [])
+    ; ti_kind =
+        Krecord [ "a", Tconstr ({ name = "int"; index = 1 }, []), Mutable ]
+    }
+  @@ Hashtbl.find types "Test";
+  do_phrase {| val test = { a = 8 } |};
+  Alcotest.check
+    value_info_testable
+    "After bind instance of record type"
+    { vi_type =
+        Tvar
+          { link = Some (Tconstr ({ name = "Test"; index = 9 }, []))
+          ; level = 1
+          }
+    ; vi_access = Immutable
+    }
+  @@ StrMap.find "test" !values;
+  let test_cases =
+    [ "Query instance", Tconstr ({ name = "Test"; index = 9 }, []), "test"
+    ; "Access field", Tconstr ({ name = "int"; index = 1 }, []), "test.a"
     ]
-    (diff_list types_list_before types_list_after)
+  in
+  List.iter
+    (fun (name, expected, input) ->
+      parse_exp input
+      |> Typechk.expression !values
+      |> Alcotest.check type_expr_testable name expected)
+    test_cases
 ;;
 
 let () =
