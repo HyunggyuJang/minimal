@@ -66,7 +66,6 @@ let print_token : Parser.token -> string =
 ;;
 
 let expression_testable = Alcotest.testable pp_expression equal_expression
-let command_testable = Alcotest.testable pp_command equal_command
 
 let test_tokens () =
   let open Lexer in
@@ -184,46 +183,56 @@ let test_expr () =
 ;;
 
 let test_commands () =
-  Alcotest.(check (list command_testable))
+  Alcotest.check
+    expression_testable
     "val declaration using record destruction"
-    [ { sc_desc =
-          STtype
-            [ { sd_name = "Test"
-              ; sd_params = []
-              ; sd_kind =
-                  SKrecord
-                    [ ( "a"
-                      , { st_desc = STconstr ("int", []); st_loc = dummy_loc }
-                      , Mutable )
-                    ]
-              ; sd_loc = dummy_loc
-              }
-            ]
-      ; sc_loc = dummy_loc
-      }
-    ; { sc_desc =
-          SEval
-            [ ( { sp_desc =
-                    SPrecord
-                      [ "a", { sp_desc = SPid "test"; sp_loc = dummy_loc } ]
-                ; sp_loc = dummy_loc
-                }
-              , { se_desc =
-                    SErecord
-                      [ "a", { se_desc = SEconst (Cint 8); se_loc = dummy_loc }
-                      ]
-                ; se_loc = dummy_loc
-                } )
-            ]
-      ; sc_loc = dummy_loc
-      }
-    ]
-    (List.concat
-       (List.map
-          parse
-          [ {| type Test = { mutable a: int } |}
-          ; {| val { a = test } = { a = 8 } |}
-          ]))
+    { se_desc =
+        SEseq
+          [ { sc_desc =
+                STtype
+                  [ { sd_name = "Test"
+                    ; sd_params = []
+                    ; sd_kind =
+                        SKrecord
+                          [ ( "a"
+                            , { st_desc = STconstr ("int", [])
+                              ; st_loc = dummy_loc
+                              }
+                            , Mutable )
+                          ]
+                    ; sd_loc = dummy_loc
+                    }
+                  ]
+            ; sc_loc = dummy_loc
+            }
+          ; { sc_desc =
+                SEval
+                  [ ( { sp_desc =
+                          SPrecord
+                            [ "a", { sp_desc = SPid "test"; sp_loc = dummy_loc }
+                            ]
+                      ; sp_loc = dummy_loc
+                      }
+                    , { se_desc =
+                          SErecord
+                            [ ( "a"
+                              , { se_desc = SEconst (Cint 8)
+                                ; se_loc = dummy_loc
+                                } )
+                            ]
+                      ; se_loc = dummy_loc
+                      } )
+                  ]
+            ; sc_loc = dummy_loc
+            }
+          ]
+    ; se_loc = dummy_loc
+    }
+    (parse_exp
+       {| begin
+            type Test = { mutable a: int };
+            val { a = test } = { a = 8 }
+          end |})
 ;;
 
 let () =
