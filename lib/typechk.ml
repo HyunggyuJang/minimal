@@ -99,6 +99,9 @@ let type_kind names vars kind =
       (List.map (fun (s, sty, access) -> s, type_expr true sty, access) fl)
 ;;
 
+(** Used to define several type definitions simultaneously. I.e.,
+    [type t1 = Test of t2 and t2 = Test2 of t1]
+*)
 let add_typedef loc dl =
   all_differ loc "type" "type" (List.map (fun td -> td.sd_name) dl);
   (* add dummy types *)
@@ -163,13 +166,31 @@ let hide_type loc s =
        then error_message loc "cannot hide type, some labels were redefined";
        List.iter (fun (s, _, _) -> Hashtbl.remove labels s) fl);
     Hashtbl.remove types s;
-    let info =
-      { ti_params = info.ti_params; ti_res = info.ti_res; ti_kind = Kbasic }
-    in
+    let info = { info with ti_kind = Kbasic } in
     Hashtbl.add types s info;
     types_map := IdMap.add id info !types_map
   with
   | Not_found -> error_message loc ("type " ^ s ^ " is not defined")
+;;
+
+let%test _ =
+  let dummy_loc = { first = Lexing.dummy_pos; last = Lexing.dummy_pos } in
+  let before_hide_type = IdMap.find { name = "string"; index = 7 } !types_map in
+  hide_type dummy_loc "string";
+  IdMap.find { name = "string"; index = 7 } !types_map
+  = { ti_params = []
+    ; ti_res = Tconstr ({ name = "string"; index = 7 }, [])
+    ; ti_kind = Kbasic
+    }
+  && before_hide_type
+     = { ti_params = []
+       ; ti_res = Tconstr ({ name = "string"; index = 7 }, [])
+       ; ti_kind =
+           Kabbrev
+             (Tconstr
+                ( { name = "array"; index = 4 }
+                , [ Tconstr ({ name = "char"; index = 2 }, []) ] ))
+       }
 ;;
 
 let newvar () = Tvar (newvar ())

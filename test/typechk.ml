@@ -18,7 +18,7 @@ let test_constants () =
   List.iter
     (fun (name, expected, input) ->
       parse_exp input
-      |> Typechk.expression StrMap.empty
+      |> Typechk.type_expression StrMap.empty
       |> Alcotest.check type_expr_testable name expected)
     test_cases
 ;;
@@ -54,15 +54,41 @@ let test_record () =
   List.iter
     (fun (name, expected, input) ->
       parse_exp input
-      |> Typechk.expression !values
+      |> Typechk.type_expression !values
       |> Alcotest.check type_expr_testable name expected)
     test_cases
+;;
+
+let test_mutual_typedef () =
+  do_phrase {| type t1 = Test1 of t2 and t2 = Test2 of t1 |};
+  List.iter
+    (fun (name, expected, input) ->
+      Alcotest.check type_info_testable name expected
+      @@ Hashtbl.find types input)
+    [ ( "t1 type"
+      , { ti_params = []
+        ; ti_res = Tconstr ({ name = "t1"; index = 11 }, [])
+        ; ti_kind =
+            Kvariant [ "Test1", [ Tconstr ({ name = "t2"; index = 12 }, []) ] ]
+        }
+      , "t1" )
+    ; ( "t2 type"
+      , { ti_params = []
+        ; ti_res = Tconstr ({ name = "t2"; index = 12 }, [])
+        ; ti_kind =
+            Kvariant [ "Test2", [ Tconstr ({ name = "t1"; index = 11 }, []) ] ]
+        }
+      , "t2" )
+    ]
 ;;
 
 let () =
   Alcotest.run
     "Typechk"
     [ "expression", [ Alcotest.test_case "const" `Quick test_constants ]
-    ; "type declaration", [ Alcotest.test_case "record" `Quick test_record ]
+    ; ( "type declaration"
+      , [ Alcotest.test_case "record" `Quick test_record
+        ; Alcotest.test_case "mutual" `Quick test_mutual_typedef
+        ] )
     ]
 ;;
